@@ -20,11 +20,12 @@ const db = (() => {
   async function init(url, key) {
     await _loadSDK();
     _client = window.supabase.createClient(url, key);
-    // Smoke test: verify the URL is a reachable Supabase project by
-    // hitting the auth health endpoint — avoids querying the table
-    // before the user is logged in (which RLS would reject).
-    const res = await fetch(`${url}/auth/v1/health`).catch(() => null);
-    if (!res || !res.ok) throw new Error('Could not reach Supabase project. Check your URL.');
+    // Smoke test: use the SDK's auth.getSession() — a CORS-safe way to
+    // verify the project is reachable. A direct fetch to /auth/v1/health
+    // is blocked by CORS in browsers, but the SDK handles headers correctly.
+    // getSession() is safe before login; it returns null if no session exists.
+    const { error: _smokeErr } = await _client.auth.getSession();
+    if (_smokeErr) throw new Error("Could not reach Supabase project. Check your URL.");
   }
 
   async function _loadSDK() {
