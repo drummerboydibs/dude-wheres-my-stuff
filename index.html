@@ -3,54 +3,98 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dude, where's my stuff? — Track What You've Lent</title>
+  <title>Dude, where's my stuff?</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="u-page-wrapper">
+
+<!-- ============================================================
+     AUTH GATE
+     Author: Dylan Smith | 2026-03-04
+     Shown fullscreen when the user is not logged in.
+     Hidden once a valid session exists.
+     ============================================================ -->
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+
+    <div class="auth-card__logo">Dude, where's my <span class="auth-card__logo-accent">stuff?</span></div>
+    <span class="auth-card__tagline">Sign in to your account</span>
+
+    <!-- Supabase config (shown if no credentials saved yet) -->
+    <div id="authConfigSection">
+      <div class="config-panel u-mb-4" style="position:relative;">
+        <span class="config-panel__label-tag">One-time Setup</span>
+        <p class="config-panel__hint">
+          Enter your <a href="https://supabase.com" target="_blank">Supabase</a>
+          project URL and anon key. See <code>README.md</code> for the full setup guide.
+        </p>
+        <div class="form-field u-mb-3">
+          <label class="form-field__label">Project URL</label>
+          <input class="form-field__input" type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co" />
+        </div>
+        <div class="form-field u-mb-4">
+          <label class="form-field__label">Anon Key</label>
+          <input class="form-field__input" type="password" id="cfgKey" placeholder="eyJh..." />
+        </div>
+        <button class="btn btn--primary" onclick="saveConfig()">Save &amp; Continue</button>
+      </div>
+      <div class="auth-message" id="configMessage"></div>
+    </div>
+
+    <!-- Login / Signup tabs (shown once Supabase is configured) -->
+    <div id="authFormSection" style="display:none;">
+      <div class="auth-tabs">
+        <button class="auth-tab auth-tab--active" id="tabSignIn" onclick="switchTab('signin')">Sign In</button>
+        <button class="auth-tab" id="tabSignUp" onclick="switchTab('signup')">Create Account</button>
+      </div>
+
+      <div class="auth-message" id="authMessage"></div>
+
+      <div class="auth-form">
+        <div class="form-field">
+          <label class="form-field__label">Email</label>
+          <input class="form-field__input" type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label">Password</label>
+          <input class="form-field__input" type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="btn btn--primary auth-form__submit" id="authSubmitBtn" onclick="handleAuthSubmit()">
+          <span id="authSubmitLabel">Sign In</span>
+        </button>
+      </div>
+
+      <div style="margin-top: var(--space-4); text-align:right;">
+        <button
+          style="background:none;border:none;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-muted);cursor:pointer;letter-spacing:var(--tracking-wide);text-transform:uppercase;"
+          onclick="clearConfig()">
+          &larr; Change project
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ============================================================
+     MAIN APP
+     Author: Dylan Smith | 2026-03-04
+     Hidden until auth is confirmed.
+     ============================================================ -->
+<div class="u-page-wrapper" id="mainApp" style="display:none;">
 
   <!-- HEADER -->
   <header class="site-header u-flex u-items-baseline u-justify-between u-flex-wrap u-gap-3">
-    <div class="site-header__logo">DUDE<span class="site-header__logo-accent"> where's my stuff?</span></div>
+    <div class="site-header__logo">Dude, where's my <span class="site-header__logo-accent">stuff?</span></div>
     <div class="site-header__tagline">Keep track of what you've lent</div>
   </header>
 
-  <!-- CONNECTION STATUS BANNER -->
-  <div class="status-banner status-banner--local" id="statusBanner">
-    <span class="status-banner__dot"></span>
-    <span id="statusText">Using local storage — connect Supabase below for cloud sync</span>
-  </div>
-
-  <!-- SUPABASE CONFIG (shown until connected) -->
-  <div class="config-panel" id="configPanel">
-    <span class="config-panel__label-tag">Database Setup</span>
-    <p class="config-panel__hint">
-      Enter your <a href="https://supabase.com" target="_blank">Supabase</a> project URL and anon key to sync
-      across devices. See <code>README.md</code> for the SQL schema to run first.
-      Leave blank to use local storage only.
-    </p>
-    <div class="u-grid-2 u-mb-4">
-      <div class="form-field">
-        <label class="form-field__label">Project URL</label>
-        <input class="form-field__input" type="text" id="cfgUrl"
-          placeholder="https://xxxx.supabase.co" />
-      </div>
-      <div class="form-field">
-        <label class="form-field__label">Anon Key</label>
-        <input class="form-field__input" type="password" id="cfgKey"
-          placeholder="eyJh..." />
-      </div>
-    </div>
-    <div class="u-flex u-gap-2">
-      <button class="btn btn--primary" onclick="connectSupabase()">Connect</button>
-      <button class="btn btn--ghost" onclick="dismissConfig()">Use Local Storage</button>
-    </div>
-  </div>
-
-  <!-- Credit -->
-  <div id="credit" class="section-header">
-    <p>Created by <b>DrummerBoyDibs</b> using <a href="https://claude.ai/">Claude</a></p>
+  <!-- AUTH BAR (logged-in user + sign out) -->
+  <div class="auth-bar">
+    <span class="auth-bar__user">Signed in as <strong id="userEmail">—</strong></span>
+    <button class="auth-bar__signout" onclick="signOut()">Sign Out</button>
   </div>
 
   <!-- STATS BAR -->
@@ -133,8 +177,8 @@
   <div class="loans-list" id="loansList"></div>
 
   <!-- RETURNED SECTION -->
-  <button class="returned-toggle" id="returnedToggle" onclick="toggleReturned()">
-    <span id="returnedArrow">▶</span>
+  <button class="returned-toggle" onclick="toggleReturned()">
+    <span id="returnedArrow">&#9654;</span>
     Returned Items (<span id="returnedCount">0</span>)
   </button>
   <div id="returnedSection" style="display:none">
@@ -142,6 +186,7 @@
   </div>
 
 </div><!-- /.u-page-wrapper -->
+
 
 <!-- CONFIRM MODAL -->
 <div class="overlay" id="overlay">
@@ -152,264 +197,190 @@
     </p>
     <div class="modal__actions">
       <button class="btn btn--cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn btn--confirm" onclick="confirmReturn()">Yes, Returned ✓</button>
+      <button class="btn btn--confirm" onclick="confirmReturn()">Yes, Returned &#10003;</button>
     </div>
   </div>
 </div>
 
-<!-- Supabase JS SDK (loaded only when user connects) -->
+
+<!-- FOOTER -->
+<footer style="
+  text-align: center;
+  padding: var(--space-8) var(--space-6);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+  border-top: var(--border-width) solid var(--color-border);
+  margin-top: var(--space-10);
+">
+  Built by DrummerBoyDibs using <a href="https://claude.ai" target="_blank" rel="noopener" style="color: var(--color-accent); text-decoration: none;">Claude</a>
+</footer>
+
+
+<script src="db.js"></script>
 <script>
 // ============================================================
-// DB ABSTRACTION LAYER
-// All storage operations route through `db.*` methods.
-// Swap the implementation below to use a different backend
-// without touching any UI code.
+// CONFIG
+// Author: Dylan Smith | 2026-03-04
+// The anon key is intentionally stored in localStorage.
+// It is a public credential by design — Supabase's RLS
+// policies (scoped to auth.uid()) are what protect your data.
 // ============================================================
-const db = {
-  _supabase: null,
-  _tableName: 'loans',
+const CONFIG_URL_KEY = 'loanlist_supabase_url';
+const CONFIG_KEY_KEY = 'loanlist_supabase_key';
 
-  // --- Connect to Supabase ---
-  async connect(url, key) {
-    // Dynamically load Supabase SDK
-    await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js');
-    this._supabase = window.supabase.createClient(url, key);
-    // Smoke test: try a lightweight query
-    const { error } = await this._supabase.from(this._tableName).select('id').limit(1);
-    if (error) throw new Error(error.message);
-    return true;
-  },
-
-  // --- CRUD ---
-  async getAll() {
-    if (this._supabase) {
-      const { data, error } = await this._supabase
-        .from(this._tableName)
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw new Error(error.message);
-      return data.map(remapFromDb);
-    }
-    return localStore.getAll();
-  },
-
-  async insert(loan) {
-    if (this._supabase) {
-      const { data, error } = await this._supabase
-        .from(this._tableName)
-        .insert([remapToDb(loan)])
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return remapFromDb(data);
-    }
-    return localStore.insert(loan);
-  },
-
-  async update(id, changes) {
-    if (this._supabase) {
-      const { data, error } = await this._supabase
-        .from(this._tableName)
-        .update(remapToDb(changes))
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return remapFromDb(data);
-    }
-    return localStore.update(id, changes);
-  },
-
-  async remove(id) {
-    if (this._supabase) {
-      const { error } = await this._supabase
-        .from(this._tableName)
-        .delete()
-        .eq('id', id);
-      if (error) throw new Error(error.message);
-      return true;
-    }
-    return localStore.remove(id);
-  },
-
-  isCloud() {
-    return !!this._supabase;
-  }
-};
-
-// Map JS camelCase <-> Postgres snake_case
-function remapToDb(loan) {
-  const out = {};
-  if (loan.item        !== undefined) out.item         = loan.item;
-  if (loan.person      !== undefined) out.loaned_to    = loan.person;
-  if (loan.category    !== undefined) out.category     = loan.category;
-  if (loan.date        !== undefined) out.loaned_on    = loan.date;
-  if (loan.due         !== undefined) out.due_date     = loan.due || null;
-  if (loan.notes       !== undefined) out.notes        = loan.notes || null;
-  if (loan.returned    !== undefined) out.returned     = loan.returned;
-  if (loan.returnedDate!== undefined) out.returned_on  = loan.returnedDate || null;
-  return out;
-}
-
-function remapFromDb(row) {
+function getConfig() {
   return {
-    id:           row.id,
-    item:         row.item,
-    person:       row.loaned_to,
-    category:     row.category,
-    date:         row.loaned_on,
-    due:          row.due_date   || '',
-    notes:        row.notes      || '',
-    returned:     row.returned,
-    returnedDate: row.returned_on || null,
+    url: localStorage.getItem(CONFIG_URL_KEY) || '',
+    key: localStorage.getItem(CONFIG_KEY_KEY) || '',
   };
 }
 
-// ============================================================
-// LOCAL STORAGE FALLBACK
-// ============================================================
-const localStore = {
-  _key: 'loanlist_v2',
-  _nextId: null,
-
-  _load() {
-    return JSON.parse(localStorage.getItem(this._key) || '[]');
-  },
-
-  _save(loans) {
-    localStorage.setItem(this._key, JSON.stringify(loans));
-  },
-
-  _newId(loans) {
-    return loans.length ? Math.max(...loans.map(l => l.id)) + 1 : 1;
-  },
-
-  getAll()  { return Promise.resolve(this._load()); },
-
-  insert(loan) {
-    const loans = this._load();
-    const record = { ...loan, id: this._newId(loans) };
-    loans.unshift(record);
-    this._save(loans);
-    return Promise.resolve(record);
-  },
-
-  update(id, changes) {
-    const loans = this._load();
-    const idx = loans.findIndex(l => l.id === id);
-    if (idx === -1) return Promise.reject(new Error('Not found'));
-    loans[idx] = { ...loans[idx], ...changes };
-    this._save(loans);
-    return Promise.resolve(loans[idx]);
-  },
-
-  remove(id) {
-    const loans = this._load().filter(l => l.id !== id);
-    this._save(loans);
-    return Promise.resolve(true);
-  },
-};
-
-// ============================================================
-// HELPERS
-// ============================================================
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve();
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error(`Failed to load ${src}`));
-    document.head.appendChild(s);
-  });
+async function saveConfig() {
+  const url = document.getElementById('cfgUrl').value.trim();
+  const key = document.getElementById('cfgKey').value.trim();
+  if (!url || !key) {
+    showMsg('configMessage', 'Please enter both fields.', 'error');
+    return;
+  }
+  localStorage.setItem(CONFIG_URL_KEY, url);
+  localStorage.setItem(CONFIG_KEY_KEY, key);
+  await initSupabase(url, key);
 }
 
-function isOverdue(loan) {
-  if (!loan.due || loan.returned) return false;
-  return new Date(loan.due) < new Date(new Date().toDateString());
-}
-
-function formatDate(d) {
-  if (!d) return '';
-  const [y, m, day] = d.split('-');
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[parseInt(m) - 1]} ${parseInt(day)}, ${y}`;
-}
-
-function daysSince(d) {
-  const diff = Date.now() - new Date(d).getTime();
-  const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'today';
-  if (days === 1) return '1 day ago';
-  return `${days} days ago`;
-}
-
-function catPillClass(cat) {
-  const map = { book: 'book', tool: 'tool', clothing: 'clothing', media: 'media', other: 'other' };
-  return `category-pill category-pill--${map[cat] || 'other'}`;
+function clearConfig() {
+  localStorage.removeItem(CONFIG_URL_KEY);
+  localStorage.removeItem(CONFIG_KEY_KEY);
+  document.getElementById('authConfigSection').style.display = '';
+  document.getElementById('authFormSection').style.display = 'none';
+  clearMsg('authMessage');
 }
 
 // ============================================================
-// STATE
+// AUTH GATE UI
+// Author: Dylan Smith | 2026-03-04
+// ============================================================
+let currentTab = 'signin';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabSignIn').classList.toggle('auth-tab--active', tab === 'signin');
+  document.getElementById('tabSignUp').classList.toggle('auth-tab--active', tab === 'signup');
+  document.getElementById('authSubmitLabel').textContent = tab === 'signin' ? 'Sign In' : 'Create Account';
+  document.getElementById('authPassword').autocomplete = tab === 'signin' ? 'current-password' : 'new-password';
+  clearMsg('authMessage');
+}
+
+function showMsg(id, text, type = 'error') {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `auth-message auth-message--visible auth-message--${type}`;
+}
+
+function clearMsg(id) {
+  const el = document.getElementById(id);
+  if (el) { el.className = 'auth-message'; el.textContent = ''; }
+}
+
+function setAuthLoading(loading) {
+  const btn   = document.getElementById('authSubmitBtn');
+  const label = document.getElementById('authSubmitLabel');
+  btn.disabled = loading;
+  label.innerHTML = loading
+    ? '<span class="spinner"></span>'
+    : (currentTab === 'signin' ? 'Sign In' : 'Create Account');
+}
+
+async function handleAuthSubmit() {
+  const email    = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  if (!email || !password) {
+    showMsg('authMessage', 'Please enter your email and password.', 'error');
+    return;
+  }
+  clearMsg('authMessage');
+  setAuthLoading(true);
+  try {
+    if (currentTab === 'signin') {
+      await db.auth.signIn(email, password);
+      // onAuthStateChange handles the rest
+    } else {
+      await db.auth.signUp(email, password);
+      showMsg('authMessage', 'Account created! Check your email for a confirmation link, then sign in.', 'success');
+    }
+  } catch (err) {
+    showMsg('authMessage', err.message, 'error');
+  } finally {
+    setAuthLoading(false);
+  }
+}
+
+function showApp(session) {
+  document.getElementById('authGate').classList.add('auth-gate--hidden');
+  document.getElementById('mainApp').style.display = '';
+  document.getElementById('userEmail').textContent = session.user.email;
+  loadLoans();
+}
+
+function showAuthGate() {
+  document.getElementById('authGate').classList.remove('auth-gate--hidden');
+  document.getElementById('mainApp').style.display = 'none';
+  loans = [];
+  renderLoans();
+}
+
+async function signOut() {
+  try {
+    await db.auth.signOut();
+  } catch (e) { /* onAuthStateChange fires regardless */ }
+}
+
+// ============================================================
+// SUPABASE INIT
+// Author: Dylan Smith | 2026-03-04
+// ============================================================
+async function initSupabase(url, key) {
+  try {
+    await db.init(url, key);
+
+    document.getElementById('authConfigSection').style.display = 'none';
+    document.getElementById('authFormSection').style.display = '';
+
+    // React to login / logout events automatically
+    db.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        showApp(session);
+      } else {
+        showAuthGate();
+      }
+    });
+
+    // Restore an existing session on page refresh
+    const session = await db.auth.getSession();
+    if (session) showApp(session);
+
+  } catch (err) {
+    document.getElementById('authConfigSection').style.display = '';
+    document.getElementById('authFormSection').style.display = 'none';
+    showMsg('configMessage', `Could not connect: ${err.message}`, 'error');
+  }
+}
+
+// ============================================================
+// LOAN STATE & OPERATIONS
+// Author: Dylan Smith | 2026-03-04
 // ============================================================
 let loans = [];
 let currentFilter = 'out';
 let pendingReturnId = null;
 let showReturned = false;
 
-// ============================================================
-// SUPABASE CONFIG UI
-// ============================================================
-async function connectSupabase() {
-  const url = document.getElementById('cfgUrl').value.trim();
-  const key = document.getElementById('cfgKey').value.trim();
-  if (!url || !key) {
-    alert('Please enter both the Project URL and Anon Key.');
-    return;
-  }
-  setStatus('connecting');
-  try {
-    await db.connect(url, key);
-    localStorage.setItem('loanlist_supabase_url', url);
-    localStorage.setItem('loanlist_supabase_key', key);
-    document.getElementById('configPanel').style.display = 'none';
-    setStatus('connected');
-    await loadLoans();
-  } catch (err) {
-    setStatus('error', `Connection failed: ${err.message}`);
-  }
-}
-
-function dismissConfig() {
-  document.getElementById('configPanel').style.display = 'none';
-  setStatus('local');
-}
-
-function setStatus(state, msg) {
-  const banner = document.getElementById('statusBanner');
-  const text   = document.getElementById('statusText');
-  banner.className = 'status-banner';
-  const states = {
-    local:       ['status-banner--local',     'Using local storage — data stays in this browser'],
-    connecting:  ['status-banner--local',     'Connecting to Supabase…'],
-    connected:   ['status-banner--connected', 'Connected to Supabase — data syncs across devices'],
-    error:       ['status-banner--error',     msg || 'Connection error'],
-  };
-  const [cls, label] = states[state] || states.local;
-  banner.classList.add(cls);
-  text.textContent = label;
-}
-
-// ============================================================
-// LOAN OPERATIONS
-// ============================================================
 async function loadLoans() {
   try {
     loans = await db.getAll();
     renderLoans();
   } catch (err) {
     console.error('Load failed:', err);
-    setStatus('error', `Load failed: ${err.message}`);
   }
 }
 
@@ -421,13 +392,7 @@ async function addLoan() {
   const category = document.getElementById('fCategory').value;
   const notes    = document.getElementById('fNotes').value.trim();
 
-  // Validate
-  const errors = [
-    !item   && 'fItem',
-    !person && 'fPerson',
-    !date   && 'fDate',
-  ].filter(Boolean);
-
+  const errors = [!item && 'fItem', !person && 'fPerson', !date && 'fDate'].filter(Boolean);
   if (errors.length) {
     errors.forEach(id => {
       const el = document.getElementById(id);
@@ -440,12 +405,11 @@ async function addLoan() {
   try {
     const record = await db.insert({ item, person, category, date, due, notes, returned: false, returnedDate: null });
     loans.unshift(record);
-    // Clear form
     ['fItem','fPerson','fDue','fNotes'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
     renderLoans();
   } catch (err) {
-    alert(`Couldn't save loan: ${err.message}`);
+    alert(`Couldn't save: ${err.message}`);
   }
 }
 
@@ -466,13 +430,13 @@ async function confirmReturn() {
   const today = new Date().toISOString().split('T')[0];
   const changes = { returned: true, returnedDate: today };
   try {
-    const updated = await db.update(pendingReturnId, changes);
+    await db.update(pendingReturnId, changes);
     const idx = loans.findIndex(l => l.id === pendingReturnId);
     if (idx !== -1) loans[idx] = { ...loans[idx], ...changes };
     closeModal();
     renderLoans();
   } catch (err) {
-    alert(`Couldn't update loan: ${err.message}`);
+    alert(`Couldn't update: ${err.message}`);
     closeModal();
   }
 }
@@ -483,7 +447,7 @@ async function deleteLoan(id) {
     loans = loans.filter(l => l.id !== id);
     renderLoans();
   } catch (err) {
-    alert(`Couldn't delete loan: ${err.message}`);
+    alert(`Couldn't delete: ${err.message}`);
   }
 }
 
@@ -497,33 +461,63 @@ function setFilter(f, btn) {
 function toggleReturned() {
   showReturned = !showReturned;
   document.getElementById('returnedSection').style.display = showReturned ? 'block' : 'none';
-  document.getElementById('returnedArrow').textContent = showReturned ? '▼' : '▶';
+  document.getElementById('returnedArrow').textContent = showReturned ? '\u25BC' : '\u25BA';
+}
+
+// ============================================================
+// HELPERS
+// Author: Dylan Smith | 2026-03-04
+// ============================================================
+function isOverdue(loan) {
+  if (!loan.due || loan.returned) return false;
+  return new Date(loan.due) < new Date(new Date().toDateString());
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[parseInt(m)-1]} ${parseInt(day)}, ${y}`;
+}
+
+function daysSince(d) {
+  const diff = Date.now() - new Date(d).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return '1 day ago';
+  return `${days} days ago`;
+}
+
+function catPillClass(cat) {
+  const map = { book:'book', tool:'tool', clothing:'clothing', media:'media', other:'other' };
+  return `category-pill category-pill--${map[cat] || 'other'}`;
 }
 
 // ============================================================
 // RENDER
+// Author: Dylan Smith | 2026-03-04
 // ============================================================
 function buildCard(loan) {
-  const overdue  = isOverdue(loan);
+  const overdue = isOverdue(loan);
   const modifiers = [
     loan.returned ? 'loan-card--returned' : '',
     overdue       ? 'loan-card--overdue'  : '',
   ].join(' ');
 
-  const dueStr  = loan.due   ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> due ${formatDate(loan.due)}</span>` : '';
-  const notesStr= loan.notes ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> ${loan.notes}</span>` : '';
+  const dueStr   = loan.due   ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> due ${formatDate(loan.due)}</span>` : '';
+  const notesStr = loan.notes ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> ${loan.notes}</span>` : '';
 
   const actions = loan.returned
-    ? `<span class="loan-card__returned-badge">✓ back ${formatDate(loan.returnedDate)}</span>
-       <button class="btn btn--icon" title="Delete record" onclick="deleteLoan(${loan.id})">×</button>`
+    ? `<span class="loan-card__returned-badge">&#10003; back ${formatDate(loan.returnedDate)}</span>
+       <button class="btn btn--icon" title="Delete record" onclick="deleteLoan(${loan.id})">&times;</button>`
     : `<button class="btn btn--positive" onclick="openModal(${loan.id})">Mark Returned</button>
-       <button class="btn btn--icon" title="Remove" onclick="deleteLoan(${loan.id})">×</button>`;
+       <button class="btn btn--icon" title="Remove" onclick="deleteLoan(${loan.id})">&times;</button>`;
 
   return `<div class="loan-card ${modifiers}">
     <div class="loan-card__body">
       <div class="loan-card__item-name">${loan.item}</div>
       <div class="loan-card__meta">
-        <span class="loan-card__meta-piece">→ <strong>${loan.person}</strong></span>
+        <span class="loan-card__meta-piece">&#8594; <strong>${loan.person}</strong></span>
         <span class="loan-card__meta-piece">loaned ${daysSince(loan.date)}</span>
         ${dueStr}
         ${notesStr}
@@ -535,9 +529,9 @@ function buildCard(loan) {
 }
 
 function renderLoans() {
-  const q       = document.getElementById('searchInput').value.toLowerCase();
-  const active  = loans.filter(l => !l.returned);
-  const returned= loans.filter(l =>  l.returned);
+  const q        = document.getElementById('searchInput').value.toLowerCase();
+  const active   = loans.filter(l => !l.returned);
+  const returned = loans.filter(l =>  l.returned);
 
   const filtered = active
     .filter(l => currentFilter !== 'overdue' || isOverdue(l))
@@ -550,8 +544,8 @@ function renderLoans() {
   document.getElementById('loansList').innerHTML = filtered.length
     ? filtered.map(buildCard).join('')
     : `<div class="empty-state">
-         <span class="empty-state__icon">📭</span>
-         ${currentFilter === 'overdue' ? 'No overdue items — nice!' : 'Nothing here yet. Add a loan above.'}
+         <span class="empty-state__icon">&#128397;</span>
+         ${currentFilter === 'overdue' ? 'No overdue items &#8212; nice!' : 'Nothing here yet. Add a loan above.'}
        </div>`;
 
   const filteredReturned = returned.filter(l =>
@@ -559,9 +553,8 @@ function renderLoans() {
   document.getElementById('returnedCount').textContent = filteredReturned.length;
   document.getElementById('returnedList').innerHTML = filteredReturned.length
     ? filteredReturned.map(buildCard).join('')
-    : `<div class="empty-state"><span class="empty-state__icon">📭</span>No returned items yet.</div>`;
+    : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>No returned items yet.</div>`;
 
-  // Stats
   document.getElementById('statTotal').textContent    = loans.length;
   document.getElementById('statOut').textContent      = active.length;
   document.getElementById('statOverdue').textContent  = active.filter(isOverdue).length;
@@ -569,10 +562,15 @@ function renderLoans() {
 }
 
 // ============================================================
-// KEYBOARD SHORTCUTS & INIT
+// KEYBOARD + INIT
+// Author: Dylan Smith | 2026-03-04
 // ============================================================
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.activeElement.closest('.loan-form')) addLoan();
+  if (e.key === 'Enter') {
+    if (document.activeElement.closest('.loan-form')) addLoan();
+    if (document.activeElement.closest('.auth-form')) handleAuthSubmit();
+    if (['cfgUrl','cfgKey'].includes(document.activeElement.id)) saveConfig();
+  }
   if (e.key === 'Escape') closeModal();
 });
 
@@ -580,26 +578,16 @@ document.getElementById('overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('overlay')) closeModal();
 });
 
-// Init
 document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
 
-// Auto-reconnect from saved credentials
+// Auto-init from saved credentials
 (async () => {
-  const savedUrl = localStorage.getItem('loanlist_supabase_url');
-  const savedKey = localStorage.getItem('loanlist_supabase_key');
-  if (savedUrl && savedKey) {
-    document.getElementById('cfgUrl').value = savedUrl;
-    document.getElementById('cfgKey').value = savedKey;
-    setStatus('connecting');
-    try {
-      await db.connect(savedUrl, savedKey);
-      document.getElementById('configPanel').style.display = 'none';
-      setStatus('connected');
-    } catch {
-      setStatus('local');
-    }
+  const { url, key } = getConfig();
+  if (url && key) {
+    document.getElementById('cfgUrl').value = url;
+    document.getElementById('cfgKey').value = key;
+    await initSupabase(url, key);
   }
-  await loadLoans();
 })();
 </script>
 </body>
