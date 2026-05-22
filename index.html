@@ -132,13 +132,7 @@
       </div>
       <div class="form-field">
         <label class="form-field__label">Category</label>
-        <select class="form-field__select" id="fCategory">
-          <option value="other">Other</option>
-          <option value="book">Book</option>
-          <option value="tool">Tool</option>
-          <option value="clothing">Clothing</option>
-          <option value="media">Media</option>
-        </select>
+        <select class="form-field__select" id="fCategory"></select>
       </div>
     </div>
     <div class="u-grid-2 u-mb-4">
@@ -186,6 +180,15 @@
     <div class="loans-list" id="returnedList"></div>
   </div>
 
+  <!-- WRITTEN OFF SECTION -->
+  <button class="returned-toggle" onclick="toggleWrittenOff()">
+    <span id="writtenOffArrow">&#9654;</span>
+    Written Off (<span id="writtenOffCount">0</span>)
+  </button>
+  <div id="writtenOffSection" style="display:none">
+    <div class="loans-list" id="writtenOffList"></div>
+  </div>
+
 </div><!-- /.u-page-wrapper -->
 
 
@@ -205,6 +208,35 @@
     <div class="modal__actions">
       <button class="btn btn--cancel" onclick="closeModal()">Cancel</button>
       <button class="btn btn--confirm" onclick="confirmReturn()">Yes, Returned &#10003;</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- WRITE OFF MODAL -->
+<div class="overlay" id="writeoffOverlay" role="dialog" aria-modal="true" aria-labelledby="writeoffModalTitle">
+  <div class="modal">
+    <h3 class="modal__title" id="writeoffModalTitle">Write Off Item?</h3>
+    <p class="modal__body">
+      Writing off <strong id="writeoffModalItem">—</strong> loaned to <strong id="writeoffModalPerson">—</strong>.
+    </p>
+    <div class="modal__field">
+      <div class="form-field">
+        <label class="form-field__label" for="writeoffReason">Reason</label>
+        <select class="form-field__select" id="writeoffReason">
+          <option value="">Select a reason...</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal__field">
+      <div class="form-field">
+        <label class="form-field__label" for="writeoffDate">Date Written Off</label>
+        <input class="form-field__input" type="date" id="writeoffDate" />
+      </div>
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn--cancel" onclick="closeWriteoffModal()">Cancel</button>
+      <button class="btn btn--destructive" onclick="confirmWriteoff()">Write Off</button>
     </div>
   </div>
 </div>
@@ -369,39 +401,56 @@ async function initSupabase(url, key) {
 // Author: Dylan Smith | 2026-03-04
 // ============================================================
 let loans = [];
+let categories = [];
 let currentFilter = 'out';
 let pendingReturnId = null;
 let showReturned = false;
+let pendingWriteoffId = null;
+let showWrittenOff = false;
+let writeoffReasons = [];
 
 async function loadLoans() {
   try {
-    loans = await db.getAll();
+    [loans, categories, writeoffReasons] = await Promise.all([
+      db.getAll(),
+      db.getCategories(),
+      db.getWriteoffReasons(),
+    ]);
+    populateCategorySelect();
+    populateWriteoffReasonSelect();
     renderLoans();
   } catch (err) {
     console.error('Load failed:', err);
   }
 }
 
+function populateCategorySelect() {
+  document.getElementById('fCategory').innerHTML =
+    categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+}
+
+function populateWriteoffReasonSelect() {
+  document.getElementById('writeoffReason').innerHTML =
+    '<option value="">Select a reason...</option>' +
+    writeoffReasons.map(r => `<option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>`).join('');
+}
+
 async function addLoan() {
-  const item     = document.getElementById('fItem').value.trim();
-  const person   = document.getElementById('fPerson').value.trim();
-  const date     = document.getElementById('fDate').value;
-  const due      = document.getElementById('fDue').value;
-  const category = document.getElementById('fCategory').value;
-  const notes    = document.getElementById('fNotes').value.trim();
+  const item       = document.getElementById('fItem').value.trim();
+  const person     = document.getElementById('fPerson').value.trim();
+  const date       = document.getElementById('fDate').value;
+  const due        = document.getElementById('fDue').value;
+  const categoryId = parseInt(document.getElementById('fCategory').value, 10);
+  const notes      = document.getElementById('fNotes').value.trim();
 
   const errors = [!item && 'fItem', !person && 'fPerson', !date && 'fDate'].filter(Boolean);
   if (errors.length) {
-    errors.forEach(id => {
-      const el = document.getElementById(id);
-      el.classList.add('form-field__input--error');
-      setTimeout(() => el.classList.remove('form-field__input--error'), 1400);
-    });
+    errors.forEach(id => flashError(document.getElementById(id)));
     return;
   }
 
   try {
-    const record = await db.insert({ item, person, category, date, due, notes, returned: false, returnedDate: null });
+    const record = await db.insert({ item, person, categoryId, date, due, notes, returned: false, returnedDate: null });
     loans.unshift(record);
     ['fItem','fPerson','fDue','fNotes'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
@@ -432,12 +481,9 @@ function closeModal() {
 }
 
 async function confirmReturn() {
-  const returnedDate = document.getElementById('modalReturnDate').value;
-  if (!returnedDate) {
-    document.getElementById('modalReturnDate').classList.add('form-field__input--error');
-    setTimeout(() => document.getElementById('modalReturnDate').classList.remove('form-field__input--error'), 1400);
-    return;
-  }
+  const dateEl      = document.getElementById('modalReturnDate');
+  const returnedDate = dateEl.value;
+  if (!returnedDate) { flashError(dateEl); return; }
   const changes = { returned: true, returnedDate };
   try {
     await db.update(pendingReturnId, changes);
@@ -474,12 +520,63 @@ function toggleReturned() {
   document.getElementById('returnedArrow').textContent = showReturned ? '\u25BC' : '\u25BA';
 }
 
+function toggleWrittenOff() {
+  showWrittenOff = !showWrittenOff;
+  document.getElementById('writtenOffSection').style.display = showWrittenOff ? 'block' : 'none';
+  document.getElementById('writtenOffArrow').textContent = showWrittenOff ? '\u25BC' : '\u25BA';
+}
+
+function openWriteoffModal(id) {
+  const loan = loans.find(l => l.id === id);
+  pendingWriteoffId = id;
+  document.getElementById('writeoffModalItem').textContent   = loan.item;
+  document.getElementById('writeoffModalPerson').textContent = loan.person;
+
+  const select = document.getElementById('writeoffReason');
+  select.value = '';
+
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('writeoffDate');
+  dateInput.value = today;
+  dateInput.max   = today;
+
+  document.getElementById('writeoffOverlay').classList.add('overlay--open');
+  setTimeout(() => select.focus(), 50);
+}
+
+function closeWriteoffModal() {
+  document.getElementById('writeoffOverlay').classList.remove('overlay--open');
+  pendingWriteoffId = null;
+}
+
+async function confirmWriteoff() {
+  const reasonEl = document.getElementById('writeoffReason');
+  const dateEl   = document.getElementById('writeoffDate');
+  const reason   = reasonEl.value;
+  const date     = dateEl.value;
+
+  if (!reason) { flashError(reasonEl); return; }
+  if (!date)   { flashError(dateEl);   return; }
+
+  const changes = { writtenOff: true, writeoffReason: reason, writtenOffDate: date };
+  try {
+    await db.update(pendingWriteoffId, changes);
+    const idx = loans.findIndex(l => l.id === pendingWriteoffId);
+    if (idx !== -1) loans[idx] = { ...loans[idx], ...changes };
+    closeWriteoffModal();
+    renderLoans();
+  } catch (err) {
+    alert(`Couldn't update: ${err.message}`);
+    closeWriteoffModal();
+  }
+}
+
 // ============================================================
 // HELPERS
 // Author: Dylan Smith | 2026-03-04
 // ============================================================
 function isOverdue(loan) {
-  if (!loan.due || loan.returned) return false;
+  if (!loan.due || loan.returned || loan.writtenOff) return false;
   return new Date(loan.due) < new Date(new Date().toDateString());
 }
 
@@ -498,9 +595,25 @@ function daysSince(d) {
   return `${days} days ago`;
 }
 
-function catPillClass(cat) {
-  const map = { book:'book', tool:'tool', clothing:'clothing', media:'media', other:'other' };
-  return `category-pill category-pill--${map[cat] || 'other'}`;
+function catPillClass(slug) {
+  return `category-pill category-pill--${slug || 'other'}`;
+}
+
+function resolveCategory(categoryId) {
+  return categories.find(c => c.id === categoryId) || { name: 'Other', slug: 'other' };
+}
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function flashError(el) {
+  el.classList.add('form-field__input--error');
+  setTimeout(() => el.classList.remove('form-field__input--error'), 1400);
+}
+
+function matchesSearch(loan, q) {
+  return !q || loan.item.toLowerCase().includes(q) || loan.person.toLowerCase().includes(q);
 }
 
 // ============================================================
@@ -509,29 +622,38 @@ function catPillClass(cat) {
 // ============================================================
 function buildCard(loan) {
   const overdue = isOverdue(loan);
+  const cat = resolveCategory(loan.categoryId);
   const modifiers = [
-    loan.returned ? 'loan-card--returned' : '',
-    overdue       ? 'loan-card--overdue'  : '',
+    loan.returned   ? 'loan-card--returned'    : '',
+    loan.writtenOff ? 'loan-card--written-off' : '',
+    overdue         ? 'loan-card--overdue'      : '',
   ].join(' ');
 
   const dueStr   = loan.due   ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> due ${formatDate(loan.due)}</span>` : '';
-  const notesStr = loan.notes ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> ${loan.notes}</span>` : '';
+  const notesStr = loan.notes ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> ${escapeHtml(loan.notes)}</span>` : '';
 
-  const actions = loan.returned
-    ? `<span class="loan-card__returned-badge">&#10003; back ${formatDate(loan.returnedDate)}</span>
-       <button class="btn btn--icon" title="Delete record" onclick="deleteLoan(${loan.id})">&times;</button>`
-    : `<button class="btn btn--positive" onclick="openModal(${loan.id})">Mark Returned</button>
-       <button class="btn btn--icon" title="Remove" onclick="deleteLoan(${loan.id})">&times;</button>`;
+  let actions;
+  if (loan.writtenOff) {
+    actions = `<span class="loan-card__writeoff-badge">&#10005; ${escapeHtml(loan.writeoffReason)} &middot; ${formatDate(loan.writtenOffDate)}</span>
+               <button class="btn btn--icon" title="Delete record" onclick="deleteLoan(${loan.id})">&times;</button>`;
+  } else if (loan.returned) {
+    actions = `<span class="loan-card__returned-badge">&#10003; back ${formatDate(loan.returnedDate)}</span>
+               <button class="btn btn--icon" title="Delete record" onclick="deleteLoan(${loan.id})">&times;</button>`;
+  } else {
+    actions = `<button class="btn btn--positive" onclick="openModal(${loan.id})">Mark Returned</button>
+               <button class="btn btn--danger-ghost" onclick="openWriteoffModal(${loan.id})">Write Off</button>
+               <button class="btn btn--icon" title="Remove" onclick="deleteLoan(${loan.id})">&times;</button>`;
+  }
 
   return `<div class="loan-card ${modifiers}">
     <div class="loan-card__body">
-      <div class="loan-card__item-name">${loan.item}</div>
+      <div class="loan-card__item-name">${escapeHtml(loan.item)}</div>
       <div class="loan-card__meta">
-        <span class="loan-card__meta-piece">&#8594; <strong>${loan.person}</strong></span>
+        <span class="loan-card__meta-piece">&#8594; <strong>${escapeHtml(loan.person)}</strong></span>
         <span class="loan-card__meta-piece">loaned ${daysSince(loan.date)}</span>
         ${dueStr}
         ${notesStr}
-        <span class="${catPillClass(loan.category)}">${loan.category}</span>
+        <span class="${catPillClass(cat.slug)}">${cat.name}</span>
       </div>
     </div>
     <div class="loan-card__actions">${actions}</div>
@@ -539,13 +661,14 @@ function buildCard(loan) {
 }
 
 function renderLoans() {
-  const q        = document.getElementById('searchInput').value.toLowerCase();
-  const active   = loans.filter(l => !l.returned);
-  const returned = loans.filter(l =>  l.returned);
+  const q          = document.getElementById('searchInput').value.toLowerCase();
+  const active     = loans.filter(l => !l.returned && !l.writtenOff);
+  const returned   = loans.filter(l =>  l.returned && !l.writtenOff);
+  const writtenOff = loans.filter(l =>  l.writtenOff);
 
-  const filtered = active
-    .filter(l => currentFilter !== 'overdue' || isOverdue(l))
-    .filter(l => !q || l.item.toLowerCase().includes(q) || l.person.toLowerCase().includes(q));
+  const overdueActive = active.filter(isOverdue);
+  const base     = currentFilter === 'overdue' ? overdueActive : active;
+  const filtered = base.filter(l => matchesSearch(l, q));
 
   const titles = { out: 'Out on Loan', overdue: 'Overdue Items', all: 'All Active Loans' };
   document.getElementById('listTitle').textContent = titles[currentFilter];
@@ -558,16 +681,21 @@ function renderLoans() {
          ${currentFilter === 'overdue' ? 'No overdue items &#8212; nice!' : 'Nothing here yet. Add a loan above.'}
        </div>`;
 
-  const filteredReturned = returned.filter(l =>
-    !q || l.item.toLowerCase().includes(q) || l.person.toLowerCase().includes(q));
+  const filteredReturned = returned.filter(l => matchesSearch(l, q));
   document.getElementById('returnedCount').textContent = filteredReturned.length;
   document.getElementById('returnedList').innerHTML = filteredReturned.length
     ? filteredReturned.map(buildCard).join('')
     : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>No returned items yet.</div>`;
 
+  const filteredWrittenOff = writtenOff.filter(l => matchesSearch(l, q));
+  document.getElementById('writtenOffCount').textContent = filteredWrittenOff.length;
+  document.getElementById('writtenOffList').innerHTML = filteredWrittenOff.length
+    ? filteredWrittenOff.map(buildCard).join('')
+    : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>Nothing written off yet.</div>`;
+
   document.getElementById('statTotal').textContent    = loans.length;
   document.getElementById('statOut').textContent      = active.length;
-  document.getElementById('statOverdue').textContent  = active.filter(isOverdue).length;
+  document.getElementById('statOverdue').textContent  = overdueActive.length;
   document.getElementById('statReturned').textContent = returned.length;
 }
 
@@ -581,11 +709,17 @@ document.addEventListener('keydown', e => {
     if (document.activeElement.closest('.auth-form')) handleAuthSubmit();
     if (['cfgUrl','cfgKey'].includes(document.activeElement.id)) saveConfig();
   }
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') { closeModal(); closeWriteoffModal(); }
 });
 
-document.getElementById('overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('overlay')) closeModal();
+const overlayEl = document.getElementById('overlay');
+overlayEl.addEventListener('click', e => {
+  if (e.target === overlayEl) closeModal();
+});
+
+const writeoffOverlayEl = document.getElementById('writeoffOverlay');
+writeoffOverlayEl.addEventListener('click', e => {
+  if (e.target === writeoffOverlayEl) closeWriteoffModal();
 });
 
 document.getElementById('fDate').value = new Date().toISOString().split('T')[0];

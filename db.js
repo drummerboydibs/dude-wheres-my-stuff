@@ -11,6 +11,8 @@
 const db = (() => {
   let _client = null;
   const TABLE = 'loans';
+  const REASONS_TABLE    = 'writeoff_reasons';
+  const CATEGORIES_TABLE = 'item_categories';
 
   // ----------------------------------------------------------
   // INIT — called once on app load
@@ -132,6 +134,41 @@ const db = (() => {
     return _local.remove(id);
   }
 
+  async function getCategories() {
+    if (_client) {
+      const { data, error } = await _client
+        .from(CATEGORIES_TABLE)
+        .select('id, name, slug')
+        .order('display_order', { ascending: true });
+      if (error) throw new Error(error.message);
+      return data;
+    }
+    return [
+      { id: 1, name: 'Other',    slug: 'other'    },
+      { id: 2, name: 'Book',     slug: 'book'     },
+      { id: 3, name: 'Tool',     slug: 'tool'     },
+      { id: 4, name: 'Clothing', slug: 'clothing' },
+      { id: 5, name: 'Media',    slug: 'media'    },
+    ];
+  }
+
+  async function getWriteoffReasons() {
+    if (_client) {
+      const { data, error } = await _client
+        .from(REASONS_TABLE)
+        .select('id, name')
+        .order('display_order', { ascending: true });
+      if (error) throw new Error(error.message);
+      return data;
+    }
+    return [
+      { id: 1, name: 'Lost' },
+      { id: 2, name: 'Stolen' },
+      { id: 3, name: 'Broken' },
+      { id: 4, name: 'Given as Gift' },
+    ];
+  }
+
   // ----------------------------------------------------------
   // FIELD MAPPING  (JS camelCase <-> Postgres snake_case)
   // Author: Dylan Smith | 2026-03-04
@@ -140,12 +177,15 @@ const db = (() => {
     const out = {};
     if (loan.item         !== undefined) out.item        = loan.item;
     if (loan.person       !== undefined) out.loaned_to   = loan.person;
-    if (loan.category     !== undefined) out.category    = loan.category;
+    if (loan.categoryId   !== undefined) out.category_id = loan.categoryId;
     if (loan.date         !== undefined) out.loaned_on   = loan.date;
     if (loan.due          !== undefined) out.due_date    = loan.due || null;
     if (loan.notes        !== undefined) out.notes       = loan.notes || null;
-    if (loan.returned     !== undefined) out.returned    = loan.returned;
-    if (loan.returnedDate !== undefined) out.returned_on = loan.returnedDate || null;
+    if (loan.returned       !== undefined) out.returned        = loan.returned;
+    if (loan.returnedDate   !== undefined) out.returned_on     = loan.returnedDate   || null;
+    if (loan.writtenOff     !== undefined) out.written_off     = loan.writtenOff;
+    if (loan.writeoffReason !== undefined) out.writeoff_reason = loan.writeoffReason || null;
+    if (loan.writtenOffDate !== undefined) out.written_off_on  = loan.writtenOffDate || null;
     return out;
   }
 
@@ -154,12 +194,15 @@ const db = (() => {
       id:           row.id,
       item:         row.item,
       person:       row.loaned_to,
-      category:     row.category,
+      categoryId:   row.category_id,
       date:         row.loaned_on,
       due:          row.due_date    || '',
       notes:        row.notes       || '',
-      returned:     row.returned,
-      returnedDate: row.returned_on || null,
+      returned:       row.returned,
+      returnedDate:   row.returned_on    || null,
+      writtenOff:     row.written_off    || false,
+      writeoffReason: row.writeoff_reason || null,
+      writtenOffDate: row.written_off_on  || null,
     };
   }
 
@@ -206,5 +249,5 @@ const db = (() => {
   // PUBLIC API
   // Author: Dylan Smith | 2026-03-04
   // ----------------------------------------------------------
-  return { init, isCloud, auth, getAll, insert, update, remove };
+  return { init, isCloud, auth, getAll, insert, update, remove, getCategories, getWriteoffReasons };
 })();

@@ -470,6 +470,29 @@ body {
   border-color: var(--color-ink-soft);
 }
 
+.btn--danger-ghost {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: #f4a9a3;
+  padding: 8px var(--space-4);
+  font-size: var(--text-sm);
+}
+.btn--danger-ghost:hover {
+  background: var(--color-danger-light);
+  border-color: var(--color-danger);
+}
+
+.btn--destructive {
+  background: var(--color-danger);
+  color: #fff;
+  border-color: var(--color-danger);
+  flex: 1;
+}
+.btn--destructive:hover {
+  background: #a93226;
+  border-color: #a93226;
+}
+
 /* --- Filter Bar ------------------------------------------- */
 .filter-bar {
   display: flex;
@@ -633,6 +656,16 @@ body {
   transform: none;
 }
 
+.loan-card--written-off {
+  opacity: 0.6;
+  background: var(--color-surface-raised);
+  box-shadow: none;
+}
+.loan-card--written-off:hover {
+  box-shadow: var(--shadow-sm);
+  transform: none;
+}
+
 .loan-card--overdue {
   border-color: var(--color-danger);
   border-width: var(--border-width-thick);
@@ -712,6 +745,19 @@ body {
   font-weight: var(--weight-semibold);
   color: var(--color-positive);
   background: var(--color-positive-light);
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.loan-card__writeoff-badge {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger);
+  background: var(--color-danger-light);
   padding: 4px var(--space-3);
   border-radius: var(--radius-full);
   display: flex;
