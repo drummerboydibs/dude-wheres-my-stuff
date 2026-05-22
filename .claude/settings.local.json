@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm test *)",
+      "Bash(node node_modules/vitest/vitest.mjs run)"
+    ]
+  }
+}

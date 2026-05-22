@@ -27,7 +27,7 @@
       <div class="config-panel u-mb-4" style="position:relative;">
         <span class="config-panel__label-tag">One-time Setup</span>
         <p class="config-panel__hint">
-          Enter your <a href="https://supabase.com" target="_blank">Supabase</a>
+          Enter your <a href="https://supabase.com" target="_blank" rel="noopener noreferrer">Supabase</a>
           project URL and anon key. See <code>README.md</code> for the full setup guide.
         </p>
         <div class="form-field u-mb-3">
@@ -84,7 +84,8 @@
      Author: Dylan Smith | 2026-03-04
      Hidden until auth is confirmed.
      ============================================================ -->
-<div class="u-page-wrapper" id="mainApp" style="display:none;" aria-label="main-content">
+<div class="u-page-wrapper" id="mainApp" style="display:none;">
+  <a id="main-content" tabindex="-1"></a>
 
   <!-- HEADER (includes auth controls) -->
   <header class="site-header">
@@ -177,7 +178,7 @@
     <button class="filter-btn" onclick="setFilter('all', this)">All</button>
     <div class="search u-ml-auto">
       <input class="search__input" type="text" id="searchInput"
-        placeholder="Search..." oninput="renderLoans()" />
+        placeholder="Search..." oninput="scheduleRenderLoans()" />
     </div>
   </div>
 
@@ -646,8 +647,7 @@ function flashError(el) {
 // RENDER
 // Author: Dylan Smith | 2026-03-04
 // ============================================================
-function buildCard(loan) {
-  const overdue = isOverdue(loan);
+function buildCard(loan, overdue) {
   const cat = resolveCategory(loan.categoryId, categories);
   const modifiers = [
     loan.returned   ? 'loan-card--returned'    : '',
@@ -679,44 +679,63 @@ function buildCard(loan) {
         <span class="loan-card__meta-piece">loaned ${daysSince(loan.date)}</span>
         ${dueStr}
         ${notesStr}
-        <span class="${catPillClass(cat.slug)}">${cat.name}</span>
+        <span class="${catPillClass(cat.slug)}">${escapeHtml(cat.name)}</span>
       </div>
     </div>
     <div class="loan-card__actions">${actions}</div>
   </div>`;
 }
 
-function renderLoans() {
-  const q          = document.getElementById('searchInput').value.toLowerCase();
-  const active     = loans.filter(l => !l.returned && !l.writtenOff);
-  const returned   = loans.filter(l =>  l.returned && !l.writtenOff);
-  const writtenOff = loans.filter(l =>  l.writtenOff);
+// Debounce search input so typing doesn't rebuild three lists per keystroke.
+let _renderTimer = null;
+function scheduleRenderLoans() {
+  clearTimeout(_renderTimer);
+  _renderTimer = setTimeout(renderLoans, 120);
+}
 
-  const overdueActive = active.filter(isOverdue);
+function renderLoans() {
+  const q     = document.getElementById('searchInput').value.toLowerCase();
+  const today = new Date().toISOString().split('T')[0];
+
+  // Single-pass partition + per-loan overdue (computed once, reused for cards and stats).
+  const active = [], returned = [], writtenOff = [];
+  const overdueById = new Map();
+  for (const l of loans) {
+    if (l.writtenOff)      writtenOff.push(l);
+    else if (l.returned)   returned.push(l);
+    else {
+      active.push(l);
+      overdueById.set(l.id, isOverdue(l, today));
+    }
+  }
+  const overdueActive = active.filter(l => overdueById.get(l.id));
+
+  const matches = l => matchesSearch(l, q, resolveCategory(l.categoryId, categories).name);
+
   const base     = currentFilter === 'overdue' ? overdueActive : active;
-  const filtered = base.filter(l => matchesSearch(l, q));
+  const filtered = base.filter(matches);
 
   const titles = { out: 'Out on Loan', overdue: 'Overdue Items', all: 'All Active Loans' };
   document.getElementById('listTitle').textContent = titles[currentFilter];
   document.getElementById('listCount').textContent = filtered.length;
 
   document.getElementById('loansList').innerHTML = filtered.length
-    ? filtered.map(buildCard).join('')
+    ? filtered.map(l => buildCard(l, overdueById.get(l.id) || false)).join('')
     : `<div class="empty-state">
          <span class="empty-state__icon">&#128397;</span>
          ${currentFilter === 'overdue' ? 'No overdue items &#8212; nice!' : 'Nothing here yet. Add a loan above.'}
        </div>`;
 
-  const filteredReturned = returned.filter(l => matchesSearch(l, q));
+  const filteredReturned = returned.filter(matches);
   document.getElementById('returnedCount').textContent = filteredReturned.length;
   document.getElementById('returnedList').innerHTML = filteredReturned.length
-    ? filteredReturned.map(buildCard).join('')
+    ? filteredReturned.map(l => buildCard(l, false)).join('')
     : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>No returned items yet.</div>`;
 
-  const filteredWrittenOff = writtenOff.filter(l => matchesSearch(l, q));
+  const filteredWrittenOff = writtenOff.filter(matches);
   document.getElementById('writtenOffCount').textContent = filteredWrittenOff.length;
   document.getElementById('writtenOffList').innerHTML = filteredWrittenOff.length
-    ? filteredWrittenOff.map(buildCard).join('')
+    ? filteredWrittenOff.map(l => buildCard(l, false)).join('')
     : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>Nothing written off yet.</div>`;
 
   document.getElementById('statTotal').textContent    = loans.length;

@@ -42,12 +42,15 @@ describe('catPillClass', () => {
 });
 
 describe('matchesSearch', () => {
-  const loan = { item: 'Circular Saw', person: 'Marcus' };
+  const loan = { item: 'Circular Saw', person: 'Marcus', notes: 'Bought at Home Depot' };
   it('matches when query is empty', () => expect(matchesSearch(loan, '')).toBe(true));
   it('matches on item name case-insensitively', () => expect(matchesSearch(loan, 'circular')).toBe(true));
   it('matches on person name case-insensitively', () => expect(matchesSearch(loan, 'marcus')).toBe(true));
   it('returns false when no match', () => expect(matchesSearch(loan, 'xyz')).toBe(false));
   it('matches partial item name', () => expect(matchesSearch(loan, 'saw')).toBe(true));
+  it('matches on notes case-insensitively', () => expect(matchesSearch(loan, 'depot')).toBe(true));
+  it('handles a loan with no notes field', () => expect(matchesSearch({ item: 'A', person: 'B' }, 'a')).toBe(true));
+  it('matches on category name when provided', () => expect(matchesSearch(loan, 'tool', 'Tool')).toBe(true));
 });
 
 describe('isOverdue', () => {

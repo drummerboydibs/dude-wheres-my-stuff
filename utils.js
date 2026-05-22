@@ -20,8 +20,12 @@ function catPillClass(slug) {
   return `category-pill category-pill--${slug || 'other'}`;
 }
 
-function matchesSearch(loan, q) {
-  return !q || loan.item.toLowerCase().includes(q) || loan.person.toLowerCase().includes(q);
+function matchesSearch(loan, q, categoryName = '') {
+  if (!q) return true;
+  return loan.item.toLowerCase().includes(q)
+      || loan.person.toLowerCase().includes(q)
+      || (loan.notes || '').toLowerCase().includes(q)
+      || categoryName.toLowerCase().includes(q);
 }
 
 // today is injectable so tests are deterministic
