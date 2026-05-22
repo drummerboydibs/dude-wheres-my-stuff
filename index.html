@@ -123,22 +123,22 @@
 
   <!-- STATS BAR -->
   <div class="stats-bar u-mb-10">
-    <div class="stats-bar__item">
-      <span class="stats-bar__number" id="statTotal">0</span>
-      <span class="stats-bar__label">Total Logged</span>
-    </div>
-    <div class="stats-bar__item">
+    <button type="button" class="stats-bar__item" onclick="jumpToSection('out')" aria-label="Jump to Out on Loan list">
       <span class="stats-bar__number stats-bar__number--out" id="statOut">0</span>
       <span class="stats-bar__label">Out on Loan</span>
-    </div>
-    <div class="stats-bar__item">
+    </button>
+    <button type="button" class="stats-bar__item" onclick="jumpToSection('overdue')" aria-label="Jump to Overdue list">
       <span class="stats-bar__number stats-bar__number--overdue" id="statOverdue">0</span>
       <span class="stats-bar__label">Overdue</span>
-    </div>
-    <div class="stats-bar__item">
+    </button>
+    <button type="button" class="stats-bar__item" onclick="jumpToSection('returned')" aria-label="Jump to Returned Items list">
       <span class="stats-bar__number" id="statReturned">0</span>
       <span class="stats-bar__label">Returned</span>
-    </div>
+    </button>
+    <button type="button" class="stats-bar__item" onclick="jumpToSection('writtenoff')" aria-label="Jump to Written Off list">
+      <span class="stats-bar__number" id="statWrittenOff">0</span>
+      <span class="stats-bar__label">Written Off</span>
+    </button>
   </div>
 
   <!-- ADD LOAN FORM -->
@@ -178,9 +178,9 @@
   <!-- FILTERS + SEARCH -->
   <div class="filter-bar">
     <span class="filter-bar__label">Show:</span>
-    <button class="filter-btn filter-btn--active" onclick="setFilter('out', this)">Out on Loan</button>
-    <button class="filter-btn" onclick="setFilter('overdue', this)">Overdue</button>
-    <button class="filter-btn" onclick="setFilter('all', this)">All</button>
+    <button id="filterBtnOut" class="filter-btn filter-btn--active" onclick="setFilter('out', this)">Out on Loan</button>
+    <button id="filterBtnOverdue" class="filter-btn" onclick="setFilter('overdue', this)">Overdue</button>
+    <button id="filterBtnAll" class="filter-btn" onclick="setFilter('all', this)">All</button>
     <div class="search u-ml-auto">
       <input class="search__input" type="text" id="searchInput"
         placeholder="Search..." oninput="scheduleRenderLoans()" />
@@ -195,7 +195,7 @@
   <div class="loans-list" id="loansList"></div>
 
   <!-- RETURNED SECTION -->
-  <button class="returned-toggle" onclick="toggleReturned()">
+  <button id="returnedToggle" class="returned-toggle" onclick="toggleReturned()">
     <span id="returnedArrow">&#9654;</span>
     Returned Items (<span id="returnedCount">0</span>)
   </button>
@@ -204,7 +204,7 @@
   </div>
 
   <!-- WRITTEN OFF SECTION -->
-  <button class="returned-toggle" onclick="toggleWrittenOff()">
+  <button id="writtenOffToggle" class="returned-toggle" onclick="toggleWrittenOff()">
     <span id="writtenOffArrow">&#9654;</span>
     Written Off (<span id="writtenOffCount">0</span>)
   </button>
@@ -743,10 +743,24 @@ function renderLoans() {
     ? filteredWrittenOff.map(l => buildCard(l, false)).join('')
     : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>Nothing written off yet.</div>`;
 
-  document.getElementById('statTotal').textContent    = loans.length;
-  document.getElementById('statOut').textContent      = active.length;
-  document.getElementById('statOverdue').textContent  = overdueActive.length;
-  document.getElementById('statReturned').textContent = returned.length;
+  document.getElementById('statOut').textContent        = active.length;
+  document.getElementById('statOverdue').textContent    = overdueActive.length;
+  document.getElementById('statReturned').textContent   = returned.length;
+  document.getElementById('statWrittenOff').textContent = writtenOff.length;
+}
+
+function jumpToSection(name) {
+  if (name === 'out' || name === 'overdue') {
+    const btn = document.getElementById(name === 'out' ? 'filterBtnOut' : 'filterBtnOverdue');
+    setFilter(name, btn);
+    document.getElementById('listTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else if (name === 'returned') {
+    if (!showReturned) toggleReturned();
+    document.getElementById('returnedToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else if (name === 'writtenoff') {
+    if (!showWrittenOff) toggleWrittenOff();
+    document.getElementById('writtenOffToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 // ============================================================

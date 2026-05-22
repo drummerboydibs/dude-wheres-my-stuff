@@ -413,11 +413,26 @@ body {
   padding: var(--space-4) var(--space-5);
   text-align: center;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-fast);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
 }
 
 .stats-bar__item:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.stats-bar__item:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.stats-bar__item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .stats-bar__number {
