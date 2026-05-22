@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dude, where's my stuff?</title>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -86,17 +86,34 @@
      ============================================================ -->
 <div class="u-page-wrapper" id="mainApp" style="display:none;" aria-label="main-content">
 
-  <!-- HEADER -->
-  <header class="site-header u-flex u-items-baseline u-justify-between u-flex-wrap u-gap-3">
-    <div class="site-header__logo">Dude, where's my <span class="site-header__logo-accent">stuff?</span></div>
-    <div class="site-header__tagline">Keep track of what you've lent</div>
+  <!-- HEADER (includes auth controls) -->
+  <header class="site-header">
+    <div class="site-header__brand">
+      <div class="site-header__logo">Dude, where's my <span class="site-header__logo-accent">stuff?</span></div>
+      <div class="site-header__tagline">Keep track of what you've lent</div>
+    </div>
+    <div class="site-header__auth">
+      <span class="site-header__user">Signed in as <strong id="userEmail">—</strong></span>
+      <div class="settings-popover-wrap" id="settingsWrap">
+        <button class="site-header__settings" id="settingsBtn" onclick="toggleSettings()" title="Settings" aria-haspopup="true" aria-expanded="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+        <div class="settings-popover" id="settingsPopover" role="menu">
+          <span class="settings-popover__label">Theme</span>
+          <div class="theme-toggle">
+            <button class="theme-toggle__btn" id="themeLight" onclick="setTheme('light')">☀️ Light</button>
+            <button class="theme-toggle__btn" id="themeSystem" onclick="setTheme('system')">⚙ System</button>
+            <button class="theme-toggle__btn" id="themeDark" onclick="setTheme('dark')">🌙 Dark</button>
+          </div>
+          <hr class="settings-popover__divider"/>
+          <button class="settings-popover__signout" onclick="signOut()">Sign Out</button>
+        </div>
+      </div>
+    </div>
   </header>
-
-  <!-- AUTH BAR (logged-in user + sign out) -->
-  <div class="auth-bar">
-    <span class="auth-bar__user">Signed in as <strong id="userEmail">—</strong></span>
-    <button class="auth-bar__signout" onclick="signOut()">Sign Out</button>
-  </div>
 
   <!-- STATS BAR -->
   <div class="stats-bar u-mb-10">
@@ -350,6 +367,7 @@ function showApp(session) {
   document.getElementById('authGate').classList.add('auth-gate--hidden');
   document.getElementById('mainApp').style.display = '';
   document.getElementById('userEmail').textContent = session.user.email;
+  _syncThemeButtons(localStorage.getItem(THEME_KEY) || 'system');
   loadLoans();
 }
 
@@ -396,6 +414,48 @@ async function initSupabase(url, key) {
     showMsg('configMessage', `Could not connect: ${err.message}`, 'error');
   }
 }
+
+// ============================================================
+// SETTINGS — theme preference
+// Author: Dylan Smith | 2026-03-04
+// ============================================================
+const THEME_KEY = 'loanlist_theme';
+
+function applyTheme(theme) {
+  if (theme === 'dark')  document.documentElement.setAttribute('data-theme', 'dark');
+  else if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+}
+
+function _syncThemeButtons(theme) {
+  document.getElementById('themeLight').classList.toggle('theme-toggle__btn--active',  theme === 'light');
+  document.getElementById('themeSystem').classList.toggle('theme-toggle__btn--active', theme === 'system');
+  document.getElementById('themeDark').classList.toggle('theme-toggle__btn--active',   theme === 'dark');
+}
+
+function setTheme(theme) {
+  localStorage.setItem(THEME_KEY, theme);
+  applyTheme(theme);
+  _syncThemeButtons(theme);
+}
+
+function toggleSettings() {
+  const open = document.getElementById('settingsPopover').classList.toggle('settings-popover--open');
+  document.getElementById('settingsBtn').classList.toggle('site-header__settings--open', open);
+  document.getElementById('settingsBtn').setAttribute('aria-expanded', open);
+}
+
+function closeSettings() {
+  document.getElementById('settingsPopover').classList.remove('settings-popover--open');
+  document.getElementById('settingsBtn').classList.remove('site-header__settings--open');
+  document.getElementById('settingsBtn').setAttribute('aria-expanded', 'false');
+}
+
+// Apply saved theme on load (before paint to avoid flash)
+(function () {
+  const saved = localStorage.getItem(THEME_KEY) || 'system';
+  applyTheme(saved);
+})();
 
 // ============================================================
 // LOAN STATE & OPERATIONS
@@ -675,7 +735,12 @@ document.addEventListener('keydown', e => {
     if (document.activeElement.closest('.auth-form')) handleAuthSubmit();
     if (['cfgUrl','cfgKey'].includes(document.activeElement.id)) saveConfig();
   }
-  if (e.key === 'Escape') { closeModal(); closeWriteoffModal(); }
+  if (e.key === 'Escape') { closeModal(); closeWriteoffModal(); closeSettings(); }
+});
+
+// Close settings popover when clicking outside it
+document.addEventListener('click', e => {
+  if (!document.getElementById('settingsWrap').contains(e.target)) closeSettings();
 });
 
 const overlayEl = document.getElementById('overlay');
