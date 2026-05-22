@@ -265,6 +265,21 @@
 </div>
 
 
+<!-- DELETE CONFIRMATION MODAL -->
+<div class="overlay" id="deleteOverlay" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+  <div class="modal">
+    <h3 class="modal__title" id="deleteModalTitle">Delete? For real?</h3>
+    <p class="modal__body">
+      Deleting <strong id="deleteModalItem">&mdash;</strong> loaned to <strong id="deleteModalPerson">&mdash;</strong>. This can't be undone.
+    </p>
+    <div class="modal__actions">
+      <button class="btn btn--cancel" onclick="closeDeleteModal()">Nevermind</button>
+      <button class="btn btn--destructive" onclick="confirmDelete()">Really! Delete!</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- FOOTER -->
 <footer class="site-footer">
   Built by DrummerBoyDibs using <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
@@ -473,6 +488,7 @@ let currentFilter = 'out';
 let pendingReturnId = null;
 let showReturned = false;
 let pendingWriteoffId = null;
+let pendingDeleteId = null;
 let showWrittenOff = false;
 let writeoffReasons = [];
 
@@ -564,13 +580,32 @@ async function confirmReturn() {
   }
 }
 
-async function deleteLoan(id) {
+function openDeleteModal(id) {
+  const loan = loans.find(l => l.id === id);
+  if (!loan) return;
+  pendingDeleteId = id;
+  document.getElementById('deleteModalItem').textContent   = loan.item;
+  document.getElementById('deleteModalPerson').textContent = loan.person;
+  document.getElementById('deleteOverlay').classList.add('overlay--open');
+  setTimeout(() => document.querySelector('#deleteOverlay .btn--cancel').focus(), 50);
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteOverlay').classList.remove('overlay--open');
+  pendingDeleteId = null;
+}
+
+async function confirmDelete() {
+  if (pendingDeleteId == null) return;
+  const id = pendingDeleteId;
   try {
     await db.remove(id);
     loans = loans.filter(l => l.id !== id);
+    closeDeleteModal();
     renderLoans();
   } catch (err) {
     alert(`Couldn't delete: ${err.message}`);
+    closeDeleteModal();
   }
 }
 
@@ -666,14 +701,14 @@ function buildCard(loan, overdue) {
   let actions;
   if (loan.writtenOff) {
     actions = `<span class="loan-card__writeoff-badge">&#10005; ${escapeHtml(loan.writeoffReason)} &middot; ${formatDate(loan.writtenOffDate)}</span>
-               <button class="btn btn--icon" title="Delete record" onclick="deleteLoan(${loan.id})">&times;</button>`;
+               <button class="btn btn--icon" title="Delete record" onclick="openDeleteModal(${loan.id})">&times;</button>`;
   } else if (loan.returned) {
     actions = `<span class="loan-card__returned-badge">&#10003; back ${formatDate(loan.returnedDate)}</span>
-               <button class="btn btn--icon" title="Delete record" onclick="deleteLoan(${loan.id})">&times;</button>`;
+               <button class="btn btn--icon" title="Delete record" onclick="openDeleteModal(${loan.id})">&times;</button>`;
   } else {
     actions = `<button class="btn btn--positive" onclick="openModal(${loan.id})">Mark Returned</button>
                <button class="btn btn--danger-ghost" onclick="openWriteoffModal(${loan.id})">Write Off</button>
-               <button class="btn btn--icon" title="Remove" onclick="deleteLoan(${loan.id})">&times;</button>`;
+               <button class="btn btn--icon" title="Remove" onclick="openDeleteModal(${loan.id})">&times;</button>`;
   }
 
   return `<div class="loan-card ${modifiers}">
@@ -773,7 +808,7 @@ document.addEventListener('keydown', e => {
     if (document.activeElement.closest('.auth-form')) handleAuthSubmit();
     if (['cfgUrl','cfgKey'].includes(document.activeElement.id)) saveConfig();
   }
-  if (e.key === 'Escape') { closeModal(); closeWriteoffModal(); closeSettings(); }
+  if (e.key === 'Escape') { closeModal(); closeWriteoffModal(); closeDeleteModal(); closeSettings(); }
 });
 
 // Close settings popover when clicking outside it
@@ -789,6 +824,11 @@ overlayEl.addEventListener('click', e => {
 const writeoffOverlayEl = document.getElementById('writeoffOverlay');
 writeoffOverlayEl.addEventListener('click', e => {
   if (e.target === writeoffOverlayEl) closeWriteoffModal();
+});
+
+const deleteOverlayEl = document.getElementById('deleteOverlay');
+deleteOverlayEl.addEventListener('click', e => {
+  if (e.target === deleteOverlayEl) closeDeleteModal();
 });
 
 document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
