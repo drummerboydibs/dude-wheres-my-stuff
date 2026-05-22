@@ -1375,12 +1375,12 @@ body {
     --color-warning-light:  rgba(255, 214, 10, 0.12);
     --color-ink:            #f2f2f7;
     --color-ink-soft:       #d1d1d6;
-    --color-muted:          #8e8e93;
-    --color-border:         #38383a;
+    --color-muted:          #aeaeb2;
+    --color-border:         #4a4a4e;
     --color-border-focus:   #4a9ef8;
     --color-bg:             #111113;
-    --color-surface:        #1c1c1e;
-    --color-surface-raised: #2c2c2e;
+    --color-surface:        #242426;
+    --color-surface-raised: #323235;
     --color-cat-book:       #5fa8f8;
     --color-cat-tool:       #d49a4a;
     --color-cat-clothing:   #bf85f8;
