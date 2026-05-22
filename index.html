@@ -247,6 +247,7 @@
   Built by DrummerBoyDibs using <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
 </footer>
 
+<script src="utils.js"></script>
 <script src="db.js"></script>
 <script>
 // ============================================================
@@ -574,46 +575,11 @@ async function confirmWriteoff() {
 // ============================================================
 // HELPERS
 // Author: Dylan Smith | 2026-03-04
+// Pure helpers live in utils.js. flashError is DOM-coupled.
 // ============================================================
-function isOverdue(loan) {
-  if (!loan.due || loan.returned || loan.writtenOff) return false;
-  return new Date(loan.due) < new Date(new Date().toDateString());
-}
-
-function formatDate(d) {
-  if (!d) return '';
-  const [y, m, day] = d.split('-');
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[parseInt(m)-1]} ${parseInt(day)}, ${y}`;
-}
-
-function daysSince(d) {
-  const diff = Date.now() - new Date(d).getTime();
-  const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'today';
-  if (days === 1) return '1 day ago';
-  return `${days} days ago`;
-}
-
-function catPillClass(slug) {
-  return `category-pill category-pill--${slug || 'other'}`;
-}
-
-function resolveCategory(categoryId) {
-  return categories.find(c => c.id === categoryId) || { name: 'Other', slug: 'other' };
-}
-
-function escapeHtml(str) {
-  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
 function flashError(el) {
   el.classList.add('form-field__input--error');
   setTimeout(() => el.classList.remove('form-field__input--error'), 1400);
-}
-
-function matchesSearch(loan, q) {
-  return !q || loan.item.toLowerCase().includes(q) || loan.person.toLowerCase().includes(q);
 }
 
 // ============================================================
@@ -622,7 +588,7 @@ function matchesSearch(loan, q) {
 // ============================================================
 function buildCard(loan) {
   const overdue = isOverdue(loan);
-  const cat = resolveCategory(loan.categoryId);
+  const cat = resolveCategory(loan.categoryId, categories);
   const modifiers = [
     loan.returned   ? 'loan-card--returned'    : '',
     loan.writtenOff ? 'loan-card--written-off' : '',

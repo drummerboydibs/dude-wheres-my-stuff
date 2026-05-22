@@ -251,3 +251,5 @@ const db = (() => {
   // ----------------------------------------------------------
   return { init, isCloud, auth, getAll, insert, update, remove, getCategories, getWriteoffReasons };
 })();
+
+if (typeof module !== 'undefined') module.exports = db;
