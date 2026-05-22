@@ -71,7 +71,7 @@
         </button>
       </div>
 
-      <div style="margin-top: var(--space-4); text-align:right;">
+      <div id="changeProjectRow" style="margin-top: var(--space-4); text-align:right;">
         <button
           style="background:none;border:none;font-family:var(--font-body);font-size:var(--text-xs);color:var(--color-muted);cursor:pointer;letter-spacing:var(--tracking-wide);text-transform:uppercase;font-weight:var(--weight-medium);"
           onclick="clearConfig()">
@@ -285,6 +285,7 @@
   Built by DrummerBoyDibs using <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
 </footer>
 
+<script src="config.js" onerror="this.remove()"></script>
 <script src="utils.js"></script>
 <script src="db.js"></script>
 <script>
@@ -298,10 +299,16 @@
 const CONFIG_URL_KEY = 'loanlist_supabase_url';
 const CONFIG_KEY_KEY = 'loanlist_supabase_key';
 
+function isConfigBaked() {
+  return !!(window.LOAN_LIST_SUPABASE_URL && window.LOAN_LIST_SUPABASE_KEY);
+}
+
 function getConfig() {
+  // Baked config (set in config.js at deploy time from CI secrets) wins.
+  // Falls back to localStorage for local dev / first-run paste flow.
   return {
-    url: localStorage.getItem(CONFIG_URL_KEY) || '',
-    key: localStorage.getItem(CONFIG_KEY_KEY) || '',
+    url: window.LOAN_LIST_SUPABASE_URL || localStorage.getItem(CONFIG_URL_KEY) || '',
+    key: window.LOAN_LIST_SUPABASE_KEY || localStorage.getItem(CONFIG_KEY_KEY) || '',
   };
 }
 
@@ -833,8 +840,13 @@ deleteOverlayEl.addEventListener('click', e => {
 
 document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
 
-// Auto-init from saved credentials
+// Auto-init from baked or saved credentials.
+// When config is baked at deploy time, hide the project-switching escape hatch
+// so friends don't accidentally land on the URL/key paste screen.
 (async () => {
+  if (isConfigBaked()) {
+    document.getElementById('changeProjectRow').style.display = 'none';
+  }
   const { url, key } = getConfig();
   if (url && key) {
     document.getElementById('cfgUrl').value = url;

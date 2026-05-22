@@ -1,0 +1,5 @@
+# Generated at deploy time from GitHub Actions secrets.
+# Locally, an empty placeholder is fine and never committed.
+config.js
+
+node_modules/
