@@ -3,7 +3,10 @@
     "allow": [
       "mcp__Claude_Preview__preview_start",
       "Bash(npm test *)",
-      "Bash(node node_modules/vitest/vitest.mjs run)"
+      "Bash(node node_modules/vitest/vitest.mjs run)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\drumm\\\\OneDrive\\\\Documents\\\\GitHub\\\\dude-wheres-my-stuff\" -Recurse -Force)",
+      "Bash(Select-Object -First 100)",
+      "Bash(Format-Table -Property Name, FullName)"
     ]
   }
 }

@@ -1492,3 +1492,260 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* ============================================================
+   7. BORROW MODE
+   Author: Dylan Smith | 2026-05-22
+   Switching to Borrow mode swaps --color-primary and related
+   tokens from blue → amber. Every tinted element (tab active
+   state, filter pills, form tag, section badge, avatar chips,
+   card accents, focus rings) inherits the change automatically.
+   ============================================================ */
+
+/* ── Light theme: amber primary ── */
+body.borrow-mode {
+  --color-primary:       #b45309;   /* amber, 4.5:1 on white */
+  --color-primary-hover: #92400e;
+  --color-primary-light: #fef3c7;
+  --color-border-focus:  #b45309;
+  --focus-ring:          0 0 0 3px rgba(180, 83, 9, 0.40);
+}
+
+/* ── Dark system preference + borrow mode: brighter amber ── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body.borrow-mode {
+    --color-primary:       #fbbf24;   /* lighter amber for dark bg */
+    --color-primary-hover: #f59e0b;
+    --color-primary-light: rgba(251, 191, 36, 0.15);
+    --color-border-focus:  #fbbf24;
+    --focus-ring:          0 0 0 3px rgba(251, 191, 36, 0.40);
+  }
+}
+
+/* ── Forced dark + borrow mode ── */
+:root[data-theme="dark"] body.borrow-mode {
+  --color-primary:       #fbbf24;
+  --color-primary-hover: #f59e0b;
+  --color-primary-light: rgba(251, 191, 36, 0.15);
+  --color-border-focus:  #fbbf24;
+  --focus-ring:          0 0 0 3px rgba(251, 191, 36, 0.40);
+}
+
+/* ── Forced light + borrow mode: re-assert dark amber ── */
+:root[data-theme="light"] body.borrow-mode {
+  --color-primary:       #b45309;
+  --color-primary-hover: #92400e;
+  --color-primary-light: #fef3c7;
+  --color-border-focus:  #b45309;
+  --focus-ring:          0 0 0 3px rgba(180, 83, 9, 0.40);
+}
+
+/* ── Mode visibility ── */
+body:not(.borrow-mode) [data-borrow-only] { display: none !important; }
+body.borrow-mode       [data-loan-only]   { display: none !important; }
+
+
+/* --- Mode Tabs -------------------------------------------- */
+/*
+ * Sits directly below the header, breaking out of the
+ * page-wrapper's side padding with negative margins so it
+ * stretches edge-to-edge — full-width tap targets on mobile.
+ */
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0 calc(-1 * var(--space-6)) var(--space-5);
+  border-bottom: var(--border-width-thick) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.mode-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4);
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;           /* overlap the container border */
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--weight-extrabold);
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast),
+              background var(--transition-fast);
+  min-height: 52px;              /* WCAG + generous mobile touch target */
+  letter-spacing: var(--tracking-tight);
+  white-space: nowrap;
+}
+
+.mode-tab:hover:not(.mode-tab--active) {
+  background: var(--color-surface-raised);
+  color: var(--color-ink-soft);
+}
+
+.mode-tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.mode-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.mode-tab__badge {
+  background: var(--color-surface-raised);
+  color: var(--color-muted);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  padding: 2px 9px;
+  font-family: var(--font-body);
+  letter-spacing: var(--tracking-wide);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.mode-tab--active .mode-tab__badge {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+
+/* --- Context Banner --------------------------------------- */
+.mode-banner {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  margin-bottom: var(--space-8);
+  text-align: center;
+  line-height: var(--leading-normal);
+}
+
+.mode-banner strong {
+  font-weight: var(--weight-bold);
+}
+
+
+/* --- Loan Card: Avatar Chip ------------------------------- */
+/*
+ * Avatar shows the initials of the person involved
+ * (every word: "John X Jamrich" → "JXJ").
+ * The loan-card grid is extended to auto 1fr auto here
+ * so the avatar slot is always reserved.
+ */
+.loan-card {
+  grid-template-columns: auto 1fr auto;  /* avatar | body | actions */
+}
+
+.loan-card__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-extrabold);
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+  user-select: none;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+/* Overdue: avatar shifts to danger palette */
+.loan-card--overdue .loan-card__avatar {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+/* Returned / written-off: avatar fades with the card */
+.loan-card--returned .loan-card__avatar,
+.loan-card--written-off .loan-card__avatar {
+  opacity: 0.55;
+}
+
+
+/* --- Card Border Accents ---------------------------------- */
+/*
+ * A 4px accent stripe visually anchors each card to its mode.
+ * Left = Loan (you sent it out → exits left).
+ * Right = Borrow (it came in from someone → enters right).
+ * The stripe stays its mode color even on overdue cards
+ * (where the remaining 3 borders go red) so you can always
+ * read mode and status independently.
+ */
+.loan-card--loan-accent {
+  border-left: 4px solid var(--color-primary);
+}
+
+/* Keep loan accent blue even when card is overdue (red border) */
+.loan-card--overdue.loan-card--loan-accent {
+  border-left-color: #1d6fcc;   /* literal blue — intentionally not a token */
+}
+
+.loan-card--borrow-accent {
+  border-right: 4px solid var(--color-primary);
+}
+
+/* Keep borrow accent amber even when card is overdue */
+.loan-card--overdue.loan-card--borrow-accent {
+  border-right-color: #b45309;  /* literal amber */
+}
+
+
+/* --- Responsive: mode tabs on mobile ---------------------- */
+@media (max-width: 540px) {
+  /* Adjust negative breakout for smaller page padding */
+  .mode-tabs {
+    margin-left: calc(-1 * var(--space-4));
+    margin-right: calc(-1 * var(--space-4));
+  }
+
+  .mode-tab {
+    font-size: var(--text-base);
+    padding: var(--space-3) var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .mode-tab__badge {
+    display: none;   /* too crowded at 375px; count is in the stats bar */
+  }
+
+  /*
+   * On mobile the loan card was 1-column (body over actions).
+   * With the avatar added we use a 2-column layout instead:
+   * avatar + body side by side, actions spanning full width below.
+   */
+  .loan-card {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .loan-card__avatar {
+    grid-row: 1;
+    grid-column: 1;
+    align-self: start;
+    margin-top: 2px;
+  }
+
+  .loan-card__body {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .loan-card__actions {
+    grid-row: 2;
+    grid-column: 1 / -1;   /* span avatar + body columns */
+    justify-content: flex-start;
+  }
+}

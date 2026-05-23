@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -92,11 +92,14 @@
 <div class="u-page-wrapper" id="mainApp" style="display:none;">
   <a id="main-content" tabindex="-1"></a>
 
-  <!-- HEADER (includes auth controls) -->
+  <!-- HEADER -->
   <header class="site-header">
     <div class="site-header__brand">
       <div class="site-header__logo">Dude, where's my <span class="site-header__logo-accent">stuff?</span></div>
-      <div class="site-header__tagline">Keep track of what you've lent</div>
+      <div class="site-header__tagline">
+        <span data-loan-only>Keep track of what you've lent</span>
+        <span data-borrow-only>Keep track of what you've borrowed</span>
+      </div>
     </div>
     <div class="site-header__auth">
       <span class="site-header__user">Signed in as <strong id="userEmail">—</strong></span>
@@ -121,28 +124,58 @@
     </div>
   </header>
 
-  <!-- STATS BAR -->
-  <div class="stats-bar u-mb-10">
-    <button type="button" class="stats-bar__item" onclick="jumpToSection('out')" aria-label="Jump to Out on Loan list">
-      <span class="stats-bar__number stats-bar__number--out" id="statOut">0</span>
-      <span class="stats-bar__label">Out on Loan</span>
+  <!-- ── MODE TABS ─────────────────────────────────────────── -->
+  <nav class="mode-tabs" role="tablist" aria-label="Switch between Loans and Borrows">
+    <button class="mode-tab mode-tab--active" id="modeTabLoan"
+            role="tab" aria-selected="true" onclick="setMode('loan')">
+      📤 My Loans
+      <span class="mode-tab__badge" id="modeTabLoanBadge">0 out</span>
     </button>
-    <button type="button" class="stats-bar__item" onclick="jumpToSection('overdue')" aria-label="Jump to Overdue list">
-      <span class="stats-bar__number stats-bar__number--overdue" id="statOverdue">0</span>
+    <button class="mode-tab" id="modeTabBorrow"
+            role="tab" aria-selected="false" onclick="setMode('borrow')">
+      📥 My Borrows
+      <span class="mode-tab__badge" id="modeTabBorrowBadge">0 out</span>
+    </button>
+  </nav>
+
+  <!-- ── CONTEXT BANNER ────────────────────────────────────── -->
+  <div class="mode-banner">
+    <span data-loan-only>Tracking <strong>things you've lent out</strong> to other people</span>
+    <span data-borrow-only>Tracking <strong>things you've borrowed</strong> — don't forget to return them!</span>
+  </div>
+
+  <!-- ── STATS BAR ─────────────────────────────────────────── -->
+  <div class="stats-bar u-mb-10">
+    <button type="button" class="stats-bar__item" onclick="jumpToSection('out')"
+            aria-label="Jump to active list">
+      <span class="stats-bar__number stats-bar__number--out" id="statOut"       data-loan-only>0</span>
+      <span class="stats-bar__number stats-bar__number--out" id="statBorrowOut" data-borrow-only>0</span>
+      <span class="stats-bar__label" data-loan-only>Out on Loan</span>
+      <span class="stats-bar__label" data-borrow-only>Borrowing Now</span>
+    </button>
+    <button type="button" class="stats-bar__item" onclick="jumpToSection('overdue')"
+            aria-label="Jump to Overdue list">
+      <span class="stats-bar__number stats-bar__number--overdue" id="statOverdue"       data-loan-only>0</span>
+      <span class="stats-bar__number stats-bar__number--overdue" id="statBorrowOverdue" data-borrow-only>0</span>
       <span class="stats-bar__label">Overdue</span>
     </button>
-    <button type="button" class="stats-bar__item" onclick="jumpToSection('returned')" aria-label="Jump to Returned Items list">
-      <span class="stats-bar__number" id="statReturned">0</span>
-      <span class="stats-bar__label">Returned</span>
+    <button type="button" class="stats-bar__item" onclick="jumpToSection('returned')"
+            aria-label="Jump to Returned list">
+      <span class="stats-bar__number" id="statReturned"       data-loan-only>0</span>
+      <span class="stats-bar__number" id="statBorrowReturned" data-borrow-only>0</span>
+      <span class="stats-bar__label" data-loan-only>Returned</span>
+      <span class="stats-bar__label" data-borrow-only>Returned to Owner</span>
     </button>
-    <button type="button" class="stats-bar__item" onclick="jumpToSection('writtenoff')" aria-label="Jump to Written Off list">
-      <span class="stats-bar__number" id="statWrittenOff">0</span>
+    <button type="button" class="stats-bar__item" onclick="jumpToSection('writtenoff')"
+            aria-label="Jump to Written Off list">
+      <span class="stats-bar__number" id="statWrittenOff"       data-loan-only>0</span>
+      <span class="stats-bar__number" id="statBorrowWrittenOff" data-borrow-only>0</span>
       <span class="stats-bar__label">Written Off</span>
     </button>
   </div>
 
-  <!-- ADD LOAN FORM -->
-  <div class="loan-form u-mb-10">
+  <!-- ── ADD LOAN FORM ─────────────────────────────────────── -->
+  <div class="loan-form u-mb-10" id="loanForm" data-loan-only>
     <span class="loan-form__label-tag">New Loan</span>
     <div class="u-grid-3 u-mb-4">
       <div class="form-field">
@@ -175,51 +208,123 @@
     <button class="btn btn--primary" onclick="addLoan()">+ Add Loan</button>
   </div>
 
-  <!-- FILTERS + SEARCH -->
-  <div class="filter-bar">
+  <!-- ── ADD BORROW FORM ───────────────────────────────────── -->
+  <div class="loan-form u-mb-10" id="borrowForm" data-borrow-only>
+    <span class="loan-form__label-tag">New Borrow</span>
+    <div class="u-grid-3 u-mb-4">
+      <div class="form-field">
+        <label class="form-field__label">Item Name</label>
+        <input class="form-field__input" type="text" id="fBorrowItem" placeholder="e.g. Pressure Washer" />
+      </div>
+      <div class="form-field">
+        <label class="form-field__label">Borrowed From</label>
+        <input class="form-field__input" type="text" id="fBorrowPerson" placeholder="e.g. Dave" />
+      </div>
+      <div class="form-field">
+        <label class="form-field__label">Category</label>
+        <select class="form-field__select" id="fBorrowCategory"></select>
+      </div>
+    </div>
+    <div class="u-grid-2 u-mb-4">
+      <div class="form-field">
+        <label class="form-field__label">Date Borrowed</label>
+        <input class="form-field__input" type="date" id="fBorrowDate" />
+      </div>
+      <div class="form-field">
+        <label class="form-field__label">Return By (optional)</label>
+        <input class="form-field__input" type="date" id="fBorrowDue" />
+      </div>
+    </div>
+    <div class="form-field u-mb-4">
+      <label class="form-field__label">Notes (optional)</label>
+      <input class="form-field__input" type="text" id="fBorrowNotes" placeholder="Any details..." />
+    </div>
+    <button class="btn btn--primary" onclick="addBorrow()">+ Add Borrow</button>
+  </div>
+
+  <!-- ── LOAN FILTER BAR ───────────────────────────────────── -->
+  <div class="filter-bar" data-loan-only>
     <span class="filter-bar__label">Show:</span>
-    <button id="filterBtnOut" class="filter-btn filter-btn--active" onclick="setFilter('out', this)">Out on Loan</button>
-    <button id="filterBtnOverdue" class="filter-btn" onclick="setFilter('overdue', this)">Overdue</button>
-    <button id="filterBtnAll" class="filter-btn" onclick="setFilter('all', this)">All</button>
+    <button id="filterBtnOut"     class="filter-btn filter-btn--active" onclick="setLoanFilter('out', this)">Out on Loan</button>
+    <button id="filterBtnOverdue" class="filter-btn"                    onclick="setLoanFilter('overdue', this)">Overdue</button>
+    <button id="filterBtnAll"     class="filter-btn"                    onclick="setLoanFilter('all', this)">All</button>
     <div class="search u-ml-auto">
       <input class="search__input" type="text" id="searchInput"
-        placeholder="Search..." oninput="scheduleRenderLoans()" />
+             placeholder="Search loans…" oninput="scheduleRender()" />
     </div>
   </div>
 
-  <!-- ACTIVE LOANS -->
+  <!-- ── BORROW FILTER BAR ─────────────────────────────────── -->
+  <div class="filter-bar" data-borrow-only>
+    <span class="filter-bar__label">Show:</span>
+    <button id="filterBorrowBtnOut"     class="filter-btn filter-btn--active" onclick="setBorrowFilter('out', this)">Borrowing Now</button>
+    <button id="filterBorrowBtnOverdue" class="filter-btn"                    onclick="setBorrowFilter('overdue', this)">Overdue</button>
+    <button id="filterBorrowBtnAll"     class="filter-btn"                    onclick="setBorrowFilter('all', this)">All</button>
+    <div class="search u-ml-auto">
+      <input class="search__input" type="text" id="searchBorrowInput"
+             placeholder="Search borrows…" oninput="scheduleRender()" />
+    </div>
+  </div>
+
+  <!-- ── ACTIVE SECTION HEADER (shared; updated by each render fn) ── -->
   <div class="section-header">
     <span class="section-header__title" id="listTitle">Out on Loan</span>
     <span class="section-header__badge" id="listCount">0</span>
   </div>
-  <div class="loans-list" id="loansList"></div>
 
-  <!-- RETURNED SECTION -->
-  <button id="returnedToggle" class="returned-toggle" onclick="toggleReturned()">
+  <!-- ── LOAN LIST ─────────────────────────────────────────── -->
+  <div class="loans-list" id="loansList" data-loan-only></div>
+
+  <!-- ── BORROW LIST ───────────────────────────────────────── -->
+  <div class="loans-list" id="borrowsList" data-borrow-only></div>
+
+  <!-- ── LOAN RETURNED SECTION ─────────────────────────────── -->
+  <button id="returnedToggle" class="returned-toggle" data-loan-only onclick="toggleReturned()">
     <span id="returnedArrow">&#9654;</span>
     Returned Items (<span id="returnedCount">0</span>)
   </button>
-  <div id="returnedSection" style="display:none">
+  <div id="returnedSection" data-loan-only style="display:none">
     <div class="loans-list" id="returnedList"></div>
   </div>
 
-  <!-- WRITTEN OFF SECTION -->
-  <button id="writtenOffToggle" class="returned-toggle" onclick="toggleWrittenOff()">
+  <!-- ── LOAN WRITTEN OFF SECTION ──────────────────────────── -->
+  <button id="writtenOffToggle" class="returned-toggle" data-loan-only onclick="toggleWrittenOff()">
     <span id="writtenOffArrow">&#9654;</span>
     Written Off (<span id="writtenOffCount">0</span>)
   </button>
-  <div id="writtenOffSection" style="display:none">
+  <div id="writtenOffSection" data-loan-only style="display:none">
     <div class="loans-list" id="writtenOffList"></div>
+  </div>
+
+  <!-- ── BORROW RETURNED SECTION ───────────────────────────── -->
+  <button id="borrowReturnedToggle" class="returned-toggle" data-borrow-only onclick="toggleBorrowReturned()">
+    <span id="borrowReturnedArrow">&#9654;</span>
+    Returned to Owner (<span id="borrowReturnedCount">0</span>)
+  </button>
+  <div id="borrowReturnedSection" data-borrow-only style="display:none">
+    <div class="loans-list" id="borrowReturnedList"></div>
+  </div>
+
+  <!-- ── BORROW WRITTEN OFF SECTION ────────────────────────── -->
+  <button id="borrowWrittenOffToggle" class="returned-toggle" data-borrow-only onclick="toggleBorrowWrittenOff()">
+    <span id="borrowWrittenOffArrow">&#9654;</span>
+    Written Off (<span id="borrowWrittenOffCount">0</span>)
+  </button>
+  <div id="borrowWrittenOffSection" data-borrow-only style="display:none">
+    <div class="loans-list" id="borrowWrittenOffList"></div>
   </div>
 
 </div><!-- /.u-page-wrapper -->
 
 
-<!-- CONFIRM MODAL -->
+<!-- ── MARK RETURNED MODAL ───────────────────────────────────
+     Works for both loans and borrows; title/body text is set
+     dynamically by openReturnModal() based on current mode.
+     ─────────────────────────────────────────────────────── -->
 <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal">
     <h3 class="modal__title" id="modalTitle">Mark as Returned?</h3>
-    <p class="modal__body">
+    <p class="modal__body" id="modalBody">
       Checking in <strong id="modalItem">—</strong> from <strong id="modalPerson">—</strong>.
     </p>
     <div class="modal__field">
@@ -236,12 +341,15 @@
 </div>
 
 
-<!-- WRITE OFF MODAL -->
+<!-- ── WRITE OFF MODAL ───────────────────────────────────────
+     Same modal for both modes; text set by openWriteoffModal().
+     ─────────────────────────────────────────────────────── -->
 <div class="overlay" id="writeoffOverlay" role="dialog" aria-modal="true" aria-labelledby="writeoffModalTitle">
   <div class="modal">
     <h3 class="modal__title" id="writeoffModalTitle">Write Off Item?</h3>
-    <p class="modal__body">
-      Writing off <strong id="writeoffModalItem">—</strong> loaned to <strong id="writeoffModalPerson">—</strong>.
+    <p class="modal__body" id="writeoffModalBody">
+      Writing off <strong id="writeoffModalItem">—</strong>
+      <span id="writeoffModalPrep">loaned to</span> <strong id="writeoffModalPerson">—</strong>.
     </p>
     <div class="modal__field">
       <div class="form-field">
@@ -265,12 +373,15 @@
 </div>
 
 
-<!-- DELETE CONFIRMATION MODAL -->
+<!-- ── DELETE CONFIRMATION MODAL ─────────────────────────────
+     Same modal for both modes; text set by openDeleteModal().
+     ─────────────────────────────────────────────────────── -->
 <div class="overlay" id="deleteOverlay" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
   <div class="modal">
     <h3 class="modal__title" id="deleteModalTitle">Delete? For real?</h3>
-    <p class="modal__body">
-      Deleting <strong id="deleteModalItem">&mdash;</strong> loaned to <strong id="deleteModalPerson">&mdash;</strong>. This can't be undone.
+    <p class="modal__body" id="deleteModalBody">
+      Deleting <strong id="deleteModalItem">&mdash;</strong>
+      <span id="deleteModalPrep">loaned to</span> <strong id="deleteModalPerson">&mdash;</strong>. This can't be undone.
     </p>
     <div class="modal__actions">
       <button class="btn btn--cancel" onclick="closeDeleteModal()">Nevermind</button>
@@ -292,9 +403,6 @@
 // ============================================================
 // CONFIG
 // Author: Dylan Smith | 2026-03-04
-// The anon key is intentionally stored in localStorage.
-// It is a public credential by design — Supabase's RLS
-// policies (scoped to auth.uid()) are what protect your data.
 // ============================================================
 const CONFIG_URL_KEY = 'loanlist_supabase_url';
 const CONFIG_KEY_KEY = 'loanlist_supabase_key';
@@ -304,8 +412,6 @@ function isConfigBaked() {
 }
 
 function getConfig() {
-  // Baked config (set in config.js at deploy time from CI secrets) wins.
-  // Falls back to localStorage for local dev / first-run paste flow.
   return {
     url: window.LOAN_LIST_SUPABASE_URL || localStorage.getItem(CONFIG_URL_KEY) || '',
     key: window.LOAN_LIST_SUPABASE_KEY || localStorage.getItem(CONFIG_KEY_KEY) || '',
@@ -379,7 +485,6 @@ async function handleAuthSubmit() {
   try {
     if (currentTab === 'signin') {
       await db.auth.signIn(email, password);
-      // onAuthStateChange handles the rest
     } else {
       await db.auth.signUp(email, password);
       showMsg('authMessage', 'Account created! Check your email for a confirmation link, then sign in.', 'success');
@@ -396,14 +501,16 @@ function showApp(session) {
   document.getElementById('mainApp').style.display = '';
   document.getElementById('userEmail').textContent = session.user.email;
   _syncThemeButtons(localStorage.getItem(THEME_KEY) || 'system');
-  loadLoans();
+  loadData();
 }
 
 function showAuthGate() {
   document.getElementById('authGate').classList.remove('auth-gate--hidden');
   document.getElementById('mainApp').style.display = 'none';
   loans = [];
+  borrows = [];
   renderLoans();
+  renderBorrows();
 }
 
 async function signOut() {
@@ -423,16 +530,11 @@ async function initSupabase(url, key) {
     document.getElementById('authConfigSection').style.display = 'none';
     document.getElementById('authFormSection').style.display = '';
 
-    // React to login / logout events automatically
     db.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        showApp(session);
-      } else {
-        showAuthGate();
-      }
+      if (session) showApp(session);
+      else         showAuthGate();
     });
 
-    // Restore an existing session on page refresh
     const session = await db.auth.getSession();
     if (session) showApp(session);
 
@@ -450,9 +552,9 @@ async function initSupabase(url, key) {
 const THEME_KEY = 'loanlist_theme';
 
 function applyTheme(theme) {
-  if (theme === 'dark')  document.documentElement.setAttribute('data-theme', 'dark');
+  if (theme === 'dark')       document.documentElement.setAttribute('data-theme', 'dark');
   else if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
-  else document.documentElement.removeAttribute('data-theme');
+  else                        document.documentElement.removeAttribute('data-theme');
 }
 
 function _syncThemeButtons(theme) {
@@ -479,44 +581,110 @@ function closeSettings() {
   document.getElementById('settingsBtn').setAttribute('aria-expanded', 'false');
 }
 
-// Apply saved theme on load (before paint to avoid flash)
 (function () {
   const saved = localStorage.getItem(THEME_KEY) || 'system';
   applyTheme(saved);
 })();
 
 // ============================================================
-// LOAN STATE & OPERATIONS
-// Author: Dylan Smith | 2026-03-04
+// MODE
+// Author: Dylan Smith | 2026-05-22
 // ============================================================
-let loans = [];
-let categories = [];
-let currentFilter = 'out';
-let pendingReturnId = null;
-let showReturned = false;
-let pendingWriteoffId = null;
-let pendingDeleteId = null;
-let showWrittenOff = false;
+let currentMode = 'loan';
+
+function setMode(mode) {
+  currentMode = mode;
+  document.body.classList.toggle('borrow-mode', mode === 'borrow');
+
+  document.getElementById('modeTabLoan').classList.toggle('mode-tab--active', mode === 'loan');
+  document.getElementById('modeTabLoan').setAttribute('aria-selected', mode === 'loan');
+  document.getElementById('modeTabBorrow').classList.toggle('mode-tab--active', mode === 'borrow');
+  document.getElementById('modeTabBorrow').setAttribute('aria-selected', mode === 'borrow');
+
+  // Clear search when switching to avoid cross-mode confusion
+  if (mode === 'loan') {
+    document.getElementById('searchInput').value = '';
+  } else {
+    document.getElementById('searchBorrowInput').value = '';
+  }
+
+  // Re-render active mode (updates section header + stats)
+  if (mode === 'loan') renderLoans();
+  else                 renderBorrows();
+}
+
+// ============================================================
+// HELPERS
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
+// ============================================================
+function flashError(el) {
+  el.classList.add('form-field__input--error');
+  setTimeout(() => el.classList.remove('form-field__input--error'), 1400);
+}
+
+/**
+ * getInitials — every word contributes its first letter.
+ * "John X Jamrich" → "JXJ", "Marcus" → "M", "Amelia Smith" → "AS"
+ */
+function getInitials(name) {
+  return String(name || '').trim().split(/\s+/).map(w => w[0].toUpperCase()).join('');
+}
+
+// ============================================================
+// STATE
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
+// ============================================================
+let loans          = [];
+let borrows        = [];
+let categories     = [];
 let writeoffReasons = [];
 
-async function loadLoans() {
+let currentFilter       = 'out';
+let currentBorrowFilter = 'out';
+
+let pendingReturnId   = null;
+let pendingReturnMode = 'loan';
+
+let pendingWriteoffId   = null;
+let pendingWriteoffMode = 'loan';
+
+let pendingDeleteId   = null;
+let pendingDeleteMode = 'loan';
+
+let showReturned       = false;
+let showWrittenOff     = false;
+let showBorrowReturned = false;
+let showBorrowWrittenOff = false;
+
+// ============================================================
+// DATA LOAD
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
+// ============================================================
+async function loadData() {
   try {
-    [loans, categories, writeoffReasons] = await Promise.all([
+    [loans, borrows, categories, writeoffReasons] = await Promise.all([
       db.getAll(),
+      db.borrows.getAll(),
       db.getCategories(),
       db.getWriteoffReasons(),
     ]);
-    populateCategorySelect();
+    populateCategorySelects();
     populateWriteoffReasonSelect();
-    renderLoans();
+    // Render inactive mode first, then active mode last so the
+    // shared section header always reflects the current mode.
+    if (currentMode === 'loan') { renderBorrows(); renderLoans(); }
+    else                        { renderLoans();   renderBorrows(); }
   } catch (err) {
     console.error('Load failed:', err);
   }
 }
 
-function populateCategorySelect() {
-  document.getElementById('fCategory').innerHTML =
-    categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+function populateCategorySelects() {
+  const options = categories
+    .map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`)
+    .join('');
+  document.getElementById('fCategory').innerHTML       = options;
+  document.getElementById('fBorrowCategory').innerHTML = options;
 }
 
 function populateWriteoffReasonSelect() {
@@ -525,6 +693,10 @@ function populateWriteoffReasonSelect() {
     writeoffReasons.map(r => `<option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>`).join('');
 }
 
+// ============================================================
+// ADD LOAN
+// Author: Dylan Smith | 2026-03-04
+// ============================================================
 async function addLoan() {
   const item       = document.getElementById('fItem').value.trim();
   const person     = document.getElementById('fPerson').value.trim();
@@ -534,10 +706,7 @@ async function addLoan() {
   const notes      = document.getElementById('fNotes').value.trim();
 
   const errors = [!item && 'fItem', !person && 'fPerson', !date && 'fDate'].filter(Boolean);
-  if (errors.length) {
-    errors.forEach(id => flashError(document.getElementById(id)));
-    return;
-  }
+  if (errors.length) { errors.forEach(id => flashError(document.getElementById(id))); return; }
 
   try {
     const record = await db.insert({ item, person, categoryId, date, due, notes, returned: false, returnedDate: null });
@@ -550,18 +719,106 @@ async function addLoan() {
   }
 }
 
-function openModal(id) {
-  const loan = loans.find(l => l.id === id);
-  pendingReturnId = id;
-  document.getElementById('modalItem').textContent   = loan.item;
-  document.getElementById('modalPerson').textContent = loan.person;
-  // Default to today; cap max at today so future dates are blocked
-  const today = new Date().toISOString().split('T')[0];
+// ============================================================
+// ADD BORROW
+// Author: Dylan Smith | 2026-05-22
+// ============================================================
+async function addBorrow() {
+  const item       = document.getElementById('fBorrowItem').value.trim();
+  const person     = document.getElementById('fBorrowPerson').value.trim();
+  const date       = document.getElementById('fBorrowDate').value;
+  const due        = document.getElementById('fBorrowDue').value;
+  const categoryId = parseInt(document.getElementById('fBorrowCategory').value, 10);
+  const notes      = document.getElementById('fBorrowNotes').value.trim();
+
+  const errors = [!item && 'fBorrowItem', !person && 'fBorrowPerson', !date && 'fBorrowDate'].filter(Boolean);
+  if (errors.length) { errors.forEach(id => flashError(document.getElementById(id))); return; }
+
+  try {
+    const record = await db.borrows.insert({ item, person, categoryId, date, due, notes, returned: false, returnedDate: null });
+    borrows.unshift(record);
+    ['fBorrowItem','fBorrowPerson','fBorrowDue','fBorrowNotes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fBorrowDate').value = new Date().toISOString().split('T')[0];
+    renderBorrows();
+  } catch (err) {
+    alert(`Couldn't save: ${err.message}`);
+  }
+}
+
+// ============================================================
+// FILTERS
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
+// ============================================================
+function setLoanFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('[data-loan-only].filter-btn').forEach(b => b.classList.remove('filter-btn--active'));
+  btn.classList.add('filter-btn--active');
+  renderLoans();
+}
+
+function setBorrowFilter(f, btn) {
+  currentBorrowFilter = f;
+  document.querySelectorAll('[data-borrow-only].filter-btn').forEach(b => b.classList.remove('filter-btn--active'));
+  btn.classList.add('filter-btn--active');
+  renderBorrows();
+}
+
+// ============================================================
+// TOGGLE SECTIONS
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
+// ============================================================
+function toggleReturned() {
+  showReturned = !showReturned;
+  document.getElementById('returnedSection').style.display = showReturned ? 'block' : 'none';
+  document.getElementById('returnedArrow').textContent     = showReturned ? '▼' : '►';
+}
+
+function toggleWrittenOff() {
+  showWrittenOff = !showWrittenOff;
+  document.getElementById('writtenOffSection').style.display = showWrittenOff ? 'block' : 'none';
+  document.getElementById('writtenOffArrow').textContent     = showWrittenOff ? '▼' : '►';
+}
+
+function toggleBorrowReturned() {
+  showBorrowReturned = !showBorrowReturned;
+  document.getElementById('borrowReturnedSection').style.display = showBorrowReturned ? 'block' : 'none';
+  document.getElementById('borrowReturnedArrow').textContent     = showBorrowReturned ? '▼' : '►';
+}
+
+function toggleBorrowWrittenOff() {
+  showBorrowWrittenOff = !showBorrowWrittenOff;
+  document.getElementById('borrowWrittenOffSection').style.display = showBorrowWrittenOff ? 'block' : 'none';
+  document.getElementById('borrowWrittenOffArrow').textContent     = showBorrowWrittenOff ? '▼' : '►';
+}
+
+// ============================================================
+// MODALS — RETURN
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
+// ============================================================
+function openModal(id, mode = 'loan') {
+  const arr    = mode === 'loan' ? loans : borrows;
+  const record = arr.find(r => r.id === id);
+  pendingReturnId   = id;
+  pendingReturnMode = mode;
+
+  document.getElementById('modalItem').textContent   = record.item;
+  document.getElementById('modalPerson').textContent = record.person;
+
+  if (mode === 'loan') {
+    document.getElementById('modalTitle').textContent = 'Mark as Returned?';
+    document.getElementById('modalBody').innerHTML =
+      `Checking in <strong id="modalItem">${escapeHtml(record.item)}</strong> from <strong id="modalPerson">${escapeHtml(record.person)}</strong>.`;
+  } else {
+    document.getElementById('modalTitle').textContent = 'Return to Owner?';
+    document.getElementById('modalBody').innerHTML =
+      `Returning <strong id="modalItem">${escapeHtml(record.item)}</strong> to <strong id="modalPerson">${escapeHtml(record.person)}</strong>.`;
+  }
+
+  const today     = new Date().toISOString().split('T')[0];
   const dateInput = document.getElementById('modalReturnDate');
   dateInput.value = today;
   dateInput.max   = today;
   document.getElementById('overlay').classList.add('overlay--open');
-  // Move focus into modal for accessibility
   setTimeout(() => dateInput.focus(), 50);
 }
 
@@ -571,80 +828,45 @@ function closeModal() {
 }
 
 async function confirmReturn() {
-  const dateEl      = document.getElementById('modalReturnDate');
+  const dateEl       = document.getElementById('modalReturnDate');
   const returnedDate = dateEl.value;
   if (!returnedDate) { flashError(dateEl); return; }
+
   const changes = { returned: true, returnedDate };
+  const db_update = pendingReturnMode === 'loan' ? db.update : db.borrows.update;
+  const arr       = pendingReturnMode === 'loan' ? loans : borrows;
+
   try {
-    await db.update(pendingReturnId, changes);
-    const idx = loans.findIndex(l => l.id === pendingReturnId);
-    if (idx !== -1) loans[idx] = { ...loans[idx], ...changes };
+    await db_update(pendingReturnId, changes);
+    const idx = arr.findIndex(r => r.id === pendingReturnId);
+    if (idx !== -1) arr[idx] = { ...arr[idx], ...changes };
     closeModal();
-    renderLoans();
+    if (pendingReturnMode === 'loan') renderLoans();
+    else                             renderBorrows();
   } catch (err) {
     alert(`Couldn't update: ${err.message}`);
     closeModal();
   }
 }
 
-function openDeleteModal(id) {
-  const loan = loans.find(l => l.id === id);
-  if (!loan) return;
-  pendingDeleteId = id;
-  document.getElementById('deleteModalItem').textContent   = loan.item;
-  document.getElementById('deleteModalPerson').textContent = loan.person;
-  document.getElementById('deleteOverlay').classList.add('overlay--open');
-  setTimeout(() => document.querySelector('#deleteOverlay .btn--cancel').focus(), 50);
-}
+// ============================================================
+// MODALS — WRITE OFF
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
+// ============================================================
+function openWriteoffModal(id, mode = 'loan') {
+  const arr    = mode === 'loan' ? loans : borrows;
+  const record = arr.find(r => r.id === id);
+  pendingWriteoffId   = id;
+  pendingWriteoffMode = mode;
 
-function closeDeleteModal() {
-  document.getElementById('deleteOverlay').classList.remove('overlay--open');
-  pendingDeleteId = null;
-}
-
-async function confirmDelete() {
-  if (pendingDeleteId == null) return;
-  const id = pendingDeleteId;
-  try {
-    await db.remove(id);
-    loans = loans.filter(l => l.id !== id);
-    closeDeleteModal();
-    renderLoans();
-  } catch (err) {
-    alert(`Couldn't delete: ${err.message}`);
-    closeDeleteModal();
-  }
-}
-
-function setFilter(f, btn) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-btn--active'));
-  btn.classList.add('filter-btn--active');
-  renderLoans();
-}
-
-function toggleReturned() {
-  showReturned = !showReturned;
-  document.getElementById('returnedSection').style.display = showReturned ? 'block' : 'none';
-  document.getElementById('returnedArrow').textContent = showReturned ? '\u25BC' : '\u25BA';
-}
-
-function toggleWrittenOff() {
-  showWrittenOff = !showWrittenOff;
-  document.getElementById('writtenOffSection').style.display = showWrittenOff ? 'block' : 'none';
-  document.getElementById('writtenOffArrow').textContent = showWrittenOff ? '\u25BC' : '\u25BA';
-}
-
-function openWriteoffModal(id) {
-  const loan = loans.find(l => l.id === id);
-  pendingWriteoffId = id;
-  document.getElementById('writeoffModalItem').textContent   = loan.item;
-  document.getElementById('writeoffModalPerson').textContent = loan.person;
+  document.getElementById('writeoffModalItem').textContent   = record.item;
+  document.getElementById('writeoffModalPerson').textContent = record.person;
+  document.getElementById('writeoffModalPrep').textContent   = mode === 'loan' ? 'loaned to' : 'borrowed from';
 
   const select = document.getElementById('writeoffReason');
   select.value = '';
 
-  const today = new Date().toISOString().split('T')[0];
+  const today     = new Date().toISOString().split('T')[0];
   const dateInput = document.getElementById('writeoffDate');
   dateInput.value = today;
   dateInput.max   = today;
@@ -667,13 +889,17 @@ async function confirmWriteoff() {
   if (!reason) { flashError(reasonEl); return; }
   if (!date)   { flashError(dateEl);   return; }
 
-  const changes = { writtenOff: true, writeoffReason: reason, writtenOffDate: date };
+  const changes   = { writtenOff: true, writeoffReason: reason, writtenOffDate: date };
+  const db_update = pendingWriteoffMode === 'loan' ? db.update : db.borrows.update;
+  const arr       = pendingWriteoffMode === 'loan' ? loans : borrows;
+
   try {
-    await db.update(pendingWriteoffId, changes);
-    const idx = loans.findIndex(l => l.id === pendingWriteoffId);
-    if (idx !== -1) loans[idx] = { ...loans[idx], ...changes };
+    await db_update(pendingWriteoffId, changes);
+    const idx = arr.findIndex(r => r.id === pendingWriteoffId);
+    if (idx !== -1) arr[idx] = { ...arr[idx], ...changes };
     closeWriteoffModal();
-    renderLoans();
+    if (pendingWriteoffMode === 'loan') renderLoans();
+    else                               renderBorrows();
   } catch (err) {
     alert(`Couldn't update: ${err.message}`);
     closeWriteoffModal();
@@ -681,49 +907,98 @@ async function confirmWriteoff() {
 }
 
 // ============================================================
-// HELPERS
-// Author: Dylan Smith | 2026-03-04
-// Pure helpers live in utils.js. flashError is DOM-coupled.
+// MODALS — DELETE
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
 // ============================================================
-function flashError(el) {
-  el.classList.add('form-field__input--error');
-  setTimeout(() => el.classList.remove('form-field__input--error'), 1400);
+function openDeleteModal(id, mode = 'loan') {
+  const arr    = mode === 'loan' ? loans : borrows;
+  const record = arr.find(r => r.id === id);
+  if (!record) return;
+  pendingDeleteId   = id;
+  pendingDeleteMode = mode;
+
+  document.getElementById('deleteModalItem').textContent   = record.item;
+  document.getElementById('deleteModalPerson').textContent = record.person;
+  document.getElementById('deleteModalPrep').textContent   = mode === 'loan' ? 'loaned to' : 'borrowed from';
+
+  document.getElementById('deleteOverlay').classList.add('overlay--open');
+  setTimeout(() => document.querySelector('#deleteOverlay .btn--cancel').focus(), 50);
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteOverlay').classList.remove('overlay--open');
+  pendingDeleteId = null;
+}
+
+async function confirmDelete() {
+  if (pendingDeleteId == null) return;
+  const id        = pendingDeleteId;
+  const db_remove = pendingDeleteMode === 'loan' ? db.remove : db.borrows.remove;
+
+  try {
+    await db_remove(id);
+    if (pendingDeleteMode === 'loan') {
+      loans = loans.filter(r => r.id !== id);
+      closeDeleteModal();
+      renderLoans();
+    } else {
+      borrows = borrows.filter(r => r.id !== id);
+      closeDeleteModal();
+      renderBorrows();
+    }
+  } catch (err) {
+    alert(`Couldn't delete: ${err.message}`);
+    closeDeleteModal();
+  }
 }
 
 // ============================================================
-// RENDER
-// Author: Dylan Smith | 2026-03-04
+// RENDER — shared card builder
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
 // ============================================================
-function buildCard(loan, overdue) {
-  const cat = resolveCategory(loan.categoryId, categories);
-  const modifiers = [
-    loan.returned   ? 'loan-card--returned'    : '',
-    loan.writtenOff ? 'loan-card--written-off' : '',
-    overdue         ? 'loan-card--overdue'      : '',
-  ].join(' ');
+function buildCard(record, overdue, mode = 'loan') {
+  const cat        = resolveCategory(record.categoryId, categories);
+  const initials   = getInitials(record.person);
+  const accentClass = mode === 'loan' ? 'loan-card--loan-accent' : 'loan-card--borrow-accent';
 
-  const dueStr   = loan.due   ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> due ${formatDate(loan.due)}</span>` : '';
-  const notesStr = loan.notes ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> ${escapeHtml(loan.notes)}</span>` : '';
+  const modifiers = [
+    accentClass,
+    record.returned   ? 'loan-card--returned'    : '',
+    record.writtenOff ? 'loan-card--written-off' : '',
+    overdue           ? 'loan-card--overdue'      : '',
+  ].filter(Boolean).join(' ');
+
+  const arrow    = mode === 'loan' ? '&#8594;' : '&#8592;';
+  const sinceWord = mode === 'loan' ? 'loaned' : 'borrowed';
+  const dueWord   = mode === 'loan' ? 'due'    : 'return by';
+
+  const dueStr   = record.due
+    ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> ${dueWord} ${formatDate(record.due)}</span>`
+    : '';
+  const notesStr = record.notes
+    ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> ${escapeHtml(record.notes)}</span>`
+    : '';
 
   let actions;
-  if (loan.writtenOff) {
-    actions = `<span class="loan-card__writeoff-badge">&#10005; ${escapeHtml(loan.writeoffReason)} &middot; ${formatDate(loan.writtenOffDate)}</span>
-               <button class="btn btn--icon" title="Delete record" onclick="openDeleteModal(${loan.id})">&times;</button>`;
-  } else if (loan.returned) {
-    actions = `<span class="loan-card__returned-badge">&#10003; back ${formatDate(loan.returnedDate)}</span>
-               <button class="btn btn--icon" title="Delete record" onclick="openDeleteModal(${loan.id})">&times;</button>`;
+  if (record.writtenOff) {
+    actions = `<span class="loan-card__writeoff-badge">&#10005; ${escapeHtml(record.writeoffReason)} &middot; ${formatDate(record.writtenOffDate)}</span>
+               <button class="btn btn--icon" title="Delete record" onclick="openDeleteModal(${record.id}, '${mode}')">&times;</button>`;
+  } else if (record.returned) {
+    actions = `<span class="loan-card__returned-badge">&#10003; back ${formatDate(record.returnedDate)}</span>
+               <button class="btn btn--icon" title="Delete record" onclick="openDeleteModal(${record.id}, '${mode}')">&times;</button>`;
   } else {
-    actions = `<button class="btn btn--positive" onclick="openModal(${loan.id})">Mark Returned</button>
-               <button class="btn btn--danger-ghost" onclick="openWriteoffModal(${loan.id})">Write Off</button>
-               <button class="btn btn--icon" title="Remove" onclick="openDeleteModal(${loan.id})">&times;</button>`;
+    actions = `<button class="btn btn--positive" onclick="openModal(${record.id}, '${mode}')">Mark Returned</button>
+               <button class="btn btn--danger-ghost" onclick="openWriteoffModal(${record.id}, '${mode}')">Write Off</button>
+               <button class="btn btn--icon" title="Remove" onclick="openDeleteModal(${record.id}, '${mode}')">&times;</button>`;
   }
 
   return `<div class="loan-card ${modifiers}">
+    <div class="loan-card__avatar" aria-hidden="true">${escapeHtml(initials)}</div>
     <div class="loan-card__body">
-      <div class="loan-card__item-name">${escapeHtml(loan.item)}</div>
+      <div class="loan-card__item-name">${escapeHtml(record.item)}</div>
       <div class="loan-card__meta">
-        <span class="loan-card__meta-piece">&#8594; <strong>${escapeHtml(loan.person)}</strong></span>
-        <span class="loan-card__meta-piece">loaned ${daysSince(loan.date)}</span>
+        <span class="loan-card__meta-piece">${arrow} <strong>${escapeHtml(record.person)}</strong></span>
+        <span class="loan-card__meta-piece">${sinceWord} ${daysSince(record.date)}</span>
         ${dueStr}
         ${notesStr}
         <span class="${catPillClass(cat.slug)}">${escapeHtml(cat.name)}</span>
@@ -733,23 +1008,29 @@ function buildCard(loan, overdue) {
   </div>`;
 }
 
-// Debounce search input so typing doesn't rebuild three lists per keystroke.
+// Debounce so typing doesn't rebuild lists every keystroke
 let _renderTimer = null;
-function scheduleRenderLoans() {
+function scheduleRender() {
   clearTimeout(_renderTimer);
-  _renderTimer = setTimeout(renderLoans, 120);
+  _renderTimer = setTimeout(() => {
+    if (currentMode === 'loan') renderLoans();
+    else                        renderBorrows();
+  }, 120);
 }
 
+// ============================================================
+// RENDER — LOANS
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
+// ============================================================
 function renderLoans() {
   const q     = document.getElementById('searchInput').value.toLowerCase();
   const today = new Date().toISOString().split('T')[0];
 
-  // Single-pass partition + per-loan overdue (computed once, reused for cards and stats).
   const active = [], returned = [], writtenOff = [];
   const overdueById = new Map();
   for (const l of loans) {
-    if (l.writtenOff)      writtenOff.push(l);
-    else if (l.returned)   returned.push(l);
+    if (l.writtenOff)    writtenOff.push(l);
+    else if (l.returned) returned.push(l);
     else {
       active.push(l);
       overdueById.set(l.id, isOverdue(l, today));
@@ -757,17 +1038,19 @@ function renderLoans() {
   }
   const overdueActive = active.filter(l => overdueById.get(l.id));
 
-  const matches = l => matchesSearch(l, q, resolveCategory(l.categoryId, categories).name);
-
+  const matches  = l => matchesSearch(l, q, resolveCategory(l.categoryId, categories).name);
   const base     = currentFilter === 'overdue' ? overdueActive : active;
   const filtered = base.filter(matches);
 
-  const titles = { out: 'Out on Loan', overdue: 'Overdue Items', all: 'All Active Loans' };
-  document.getElementById('listTitle').textContent = titles[currentFilter];
-  document.getElementById('listCount').textContent = filtered.length;
+  // Only update the shared section header when loans is the active mode
+  if (currentMode === 'loan') {
+    const titles = { out: 'Out on Loan', overdue: 'Overdue Items', all: 'All Active Loans' };
+    document.getElementById('listTitle').textContent = titles[currentFilter];
+    document.getElementById('listCount').textContent = filtered.length;
+  }
 
   document.getElementById('loansList').innerHTML = filtered.length
-    ? filtered.map(l => buildCard(l, overdueById.get(l.id) || false)).join('')
+    ? filtered.map(l => buildCard(l, overdueById.get(l.id) || false, 'loan')).join('')
     : `<div class="empty-state">
          <span class="empty-state__icon">&#128397;</span>
          ${currentFilter === 'overdue' ? 'No overdue items &#8212; nice!' : 'Nothing here yet. Add a loan above.'}
@@ -776,46 +1059,136 @@ function renderLoans() {
   const filteredReturned = returned.filter(matches);
   document.getElementById('returnedCount').textContent = filteredReturned.length;
   document.getElementById('returnedList').innerHTML = filteredReturned.length
-    ? filteredReturned.map(l => buildCard(l, false)).join('')
+    ? filteredReturned.map(l => buildCard(l, false, 'loan')).join('')
     : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>No returned items yet.</div>`;
 
   const filteredWrittenOff = writtenOff.filter(matches);
   document.getElementById('writtenOffCount').textContent = filteredWrittenOff.length;
   document.getElementById('writtenOffList').innerHTML = filteredWrittenOff.length
-    ? filteredWrittenOff.map(l => buildCard(l, false)).join('')
+    ? filteredWrittenOff.map(l => buildCard(l, false, 'loan')).join('')
     : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>Nothing written off yet.</div>`;
 
   document.getElementById('statOut').textContent        = active.length;
   document.getElementById('statOverdue').textContent    = overdueActive.length;
   document.getElementById('statReturned').textContent   = returned.length;
   document.getElementById('statWrittenOff').textContent = writtenOff.length;
+
+  document.getElementById('modeTabLoanBadge').textContent = active.length + ' out';
 }
 
+// ============================================================
+// RENDER — BORROWS
+// Author: Dylan Smith | 2026-05-22
+// ============================================================
+function renderBorrows() {
+  const q     = document.getElementById('searchBorrowInput').value.toLowerCase();
+  const today = new Date().toISOString().split('T')[0];
+
+  const active = [], returned = [], writtenOff = [];
+  const overdueById = new Map();
+  for (const b of borrows) {
+    if (b.writtenOff)    writtenOff.push(b);
+    else if (b.returned) returned.push(b);
+    else {
+      active.push(b);
+      overdueById.set(b.id, isOverdue(b, today));
+    }
+  }
+  const overdueActive = active.filter(b => overdueById.get(b.id));
+
+  const matches  = b => matchesSearch(b, q, resolveCategory(b.categoryId, categories).name);
+  const base     = currentBorrowFilter === 'overdue' ? overdueActive : active;
+  const filtered = base.filter(matches);
+
+  // Only update the shared section header when borrows is the active mode
+  if (currentMode === 'borrow') {
+    const titles = { out: 'Borrowing Now', overdue: 'Overdue Items', all: 'All Active Borrows' };
+    document.getElementById('listTitle').textContent = titles[currentBorrowFilter];
+    document.getElementById('listCount').textContent = filtered.length;
+  }
+
+  document.getElementById('borrowsList').innerHTML = filtered.length
+    ? filtered.map(b => buildCard(b, overdueById.get(b.id) || false, 'borrow')).join('')
+    : `<div class="empty-state">
+         <span class="empty-state__icon">&#128397;</span>
+         ${currentBorrowFilter === 'overdue' ? 'No overdue items &#8212; nice!' : 'Nothing here yet. Record a borrow above.'}
+       </div>`;
+
+  const filteredReturned = returned.filter(matches);
+  document.getElementById('borrowReturnedCount').textContent = filteredReturned.length;
+  document.getElementById('borrowReturnedList').innerHTML = filteredReturned.length
+    ? filteredReturned.map(b => buildCard(b, false, 'borrow')).join('')
+    : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>Nothing returned to owner yet.</div>`;
+
+  const filteredWrittenOff = writtenOff.filter(matches);
+  document.getElementById('borrowWrittenOffCount').textContent = filteredWrittenOff.length;
+  document.getElementById('borrowWrittenOffList').innerHTML = filteredWrittenOff.length
+    ? filteredWrittenOff.map(b => buildCard(b, false, 'borrow')).join('')
+    : `<div class="empty-state"><span class="empty-state__icon">&#128397;</span>Nothing written off yet.</div>`;
+
+  document.getElementById('statBorrowOut').textContent        = active.length;
+  document.getElementById('statBorrowOverdue').textContent    = overdueActive.length;
+  document.getElementById('statBorrowReturned').textContent   = returned.length;
+  document.getElementById('statBorrowWrittenOff').textContent = writtenOff.length;
+
+  document.getElementById('modeTabBorrowBadge').textContent = active.length + ' out';
+}
+
+// ============================================================
+// JUMP TO SECTION
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
+// ============================================================
 function jumpToSection(name) {
-  if (name === 'out' || name === 'overdue') {
-    const btn = document.getElementById(name === 'out' ? 'filterBtnOut' : 'filterBtnOverdue');
-    setFilter(name, btn);
+  if (name === 'out') {
+    if (currentMode === 'loan') {
+      setLoanFilter('out', document.getElementById('filterBtnOut'));
+    } else {
+      setBorrowFilter('out', document.getElementById('filterBorrowBtnOut'));
+    }
     document.getElementById('listTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } else if (name === 'overdue') {
+    if (currentMode === 'loan') {
+      setLoanFilter('overdue', document.getElementById('filterBtnOverdue'));
+    } else {
+      setBorrowFilter('overdue', document.getElementById('filterBorrowBtnOverdue'));
+    }
+    document.getElementById('listTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
   } else if (name === 'returned') {
-    if (!showReturned) toggleReturned();
-    document.getElementById('returnedToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (currentMode === 'loan') {
+      if (!showReturned) toggleReturned();
+      document.getElementById('returnedToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      if (!showBorrowReturned) toggleBorrowReturned();
+      document.getElementById('borrowReturnedToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
   } else if (name === 'writtenoff') {
-    if (!showWrittenOff) toggleWrittenOff();
-    document.getElementById('writtenOffToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (currentMode === 'loan') {
+      if (!showWrittenOff) toggleWrittenOff();
+      document.getElementById('writtenOffToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      if (!showBorrowWrittenOff) toggleBorrowWrittenOff();
+      document.getElementById('borrowWrittenOffToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 }
 
 // ============================================================
 // KEYBOARD + INIT
-// Author: Dylan Smith | 2026-03-04
+// Author: Dylan Smith | 2026-03-04 / 2026-05-22
 // ============================================================
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
-    if (document.activeElement.closest('.loan-form')) addLoan();
-    if (document.activeElement.closest('.auth-form')) handleAuthSubmit();
+    if (document.activeElement.closest('#loanForm'))   addLoan();
+    if (document.activeElement.closest('#borrowForm')) addBorrow();
+    if (document.activeElement.closest('.auth-form'))  handleAuthSubmit();
     if (['cfgUrl','cfgKey'].includes(document.activeElement.id)) saveConfig();
   }
-  if (e.key === 'Escape') { closeModal(); closeWriteoffModal(); closeDeleteModal(); closeSettings(); }
+  if (e.key === 'Escape') {
+    closeModal(); closeWriteoffModal(); closeDeleteModal(); closeSettings();
+  }
 });
 
 // Close settings popover when clicking outside it
@@ -823,26 +1196,22 @@ document.addEventListener('click', e => {
   if (!document.getElementById('settingsWrap').contains(e.target)) closeSettings();
 });
 
-const overlayEl = document.getElementById('overlay');
-overlayEl.addEventListener('click', e => {
-  if (e.target === overlayEl) closeModal();
+// Close modals on backdrop click
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('overlay')) closeModal();
+});
+document.getElementById('writeoffOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('writeoffOverlay')) closeWriteoffModal();
+});
+document.getElementById('deleteOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('deleteOverlay')) closeDeleteModal();
 });
 
-const writeoffOverlayEl = document.getElementById('writeoffOverlay');
-writeoffOverlayEl.addEventListener('click', e => {
-  if (e.target === writeoffOverlayEl) closeWriteoffModal();
-});
+// Default form dates to today
+document.getElementById('fDate').value       = new Date().toISOString().split('T')[0];
+document.getElementById('fBorrowDate').value = new Date().toISOString().split('T')[0];
 
-const deleteOverlayEl = document.getElementById('deleteOverlay');
-deleteOverlayEl.addEventListener('click', e => {
-  if (e.target === deleteOverlayEl) closeDeleteModal();
-});
-
-document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
-
-// Auto-init from baked or saved credentials.
-// When config is baked at deploy time, hide the project-switching escape hatch
-// so friends don't accidentally land on the URL/key paste screen.
+// Auto-init from baked or saved credentials
 (async () => {
   if (isConfigBaked()) {
     document.getElementById('changeProjectRow').style.display = 'none';

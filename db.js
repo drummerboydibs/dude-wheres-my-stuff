@@ -10,7 +10,8 @@
 
 const db = (() => {
   let _client = null;
-  const TABLE = 'loans';
+  const TABLE          = 'loans';
+  const BORROWS_TABLE  = 'borrows';
   const REASONS_TABLE    = 'writeoff_reasons';
   const CATEGORIES_TABLE = 'item_categories';
 
@@ -170,6 +171,62 @@ const db = (() => {
   }
 
   // ----------------------------------------------------------
+  // BORROWS CRUD
+  // Author: Dylan Smith | 2026-05-22
+  // Same shape as loans (id, item, person, categoryId, date,
+  // due, notes, returned, returnedDate, writtenOff …) but
+  // stored in the borrows table with different column names.
+  // ----------------------------------------------------------
+  async function borrowGetAll() {
+    if (_client) {
+      const { data, error } = await _client
+        .from(BORROWS_TABLE)
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      return data.map(_borrowFromDb);
+    }
+    return _borrowLocal.getAll();
+  }
+
+  async function borrowInsert(borrow) {
+    if (_client) {
+      const { data: { user } } = await _client.auth.getUser();
+      const { data, error } = await _client
+        .from(BORROWS_TABLE)
+        .insert([{ ..._borrowToDb(borrow), user_id: user.id }])
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return _borrowFromDb(data);
+    }
+    return _borrowLocal.insert(borrow);
+  }
+
+  async function borrowUpdate(id, changes) {
+    if (_client) {
+      const { data, error } = await _client
+        .from(BORROWS_TABLE)
+        .update(_borrowToDb(changes))
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return _borrowFromDb(data);
+    }
+    return _borrowLocal.update(id, changes);
+  }
+
+  async function borrowRemove(id) {
+    if (_client) {
+      const { error } = await _client.from(BORROWS_TABLE).delete().eq('id', id);
+      if (error) throw new Error(error.message);
+      return true;
+    }
+    return _borrowLocal.remove(id);
+  }
+
+  // ----------------------------------------------------------
   // FIELD MAPPING  (JS camelCase <-> Postgres snake_case)
   // Author: Dylan Smith | 2026-03-04
   // ----------------------------------------------------------
@@ -205,6 +262,78 @@ const db = (() => {
       writtenOffDate: row.written_off_on  || null,
     };
   }
+
+  // ----------------------------------------------------------
+  // BORROW FIELD MAPPING  (JS camelCase <-> Postgres snake_case)
+  // Author: Dylan Smith | 2026-05-22
+  // ----------------------------------------------------------
+  function _borrowToDb(borrow) {
+    const out = {};
+    if (borrow.item           !== undefined) out.item           = borrow.item;
+    if (borrow.person         !== undefined) out.borrowed_from  = borrow.person;
+    if (borrow.categoryId     !== undefined) out.category_id    = borrow.categoryId;
+    if (borrow.date           !== undefined) out.borrowed_on    = borrow.date;
+    if (borrow.due            !== undefined) out.due_date       = borrow.due || null;
+    if (borrow.notes          !== undefined) out.notes          = borrow.notes || null;
+    if (borrow.returned       !== undefined) out.returned       = borrow.returned;
+    if (borrow.returnedDate   !== undefined) out.returned_on    = borrow.returnedDate   || null;
+    if (borrow.writtenOff     !== undefined) out.written_off    = borrow.writtenOff;
+    if (borrow.writeoffReason !== undefined) out.writeoff_reason = borrow.writeoffReason || null;
+    if (borrow.writtenOffDate !== undefined) out.written_off_on = borrow.writtenOffDate || null;
+    return out;
+  }
+
+  function _borrowFromDb(row) {
+    return {
+      id:             row.id,
+      item:           row.item,
+      person:         row.borrowed_from,
+      categoryId:     row.category_id,
+      date:           row.borrowed_on,
+      due:            row.due_date       || '',
+      notes:          row.notes          || '',
+      returned:       row.returned,
+      returnedDate:   row.returned_on    || null,
+      writtenOff:     row.written_off    || false,
+      writeoffReason: row.writeoff_reason || null,
+      writtenOffDate: row.written_off_on  || null,
+    };
+  }
+
+  // ----------------------------------------------------------
+  // LOCAL STORAGE FALLBACK — BORROWS
+  // Author: Dylan Smith | 2026-05-22
+  // ----------------------------------------------------------
+  const _borrowLocal = {
+    _key: 'loanlist_borrows_v1',
+    _load()  { return JSON.parse(localStorage.getItem(this._key) || '[]'); },
+    _save(d) { localStorage.setItem(this._key, JSON.stringify(d)); },
+    _newId(items) { return items.length ? Math.max(...items.map(i => i.id)) + 1 : 1; },
+
+    getAll()  { return Promise.resolve(this._load()); },
+
+    insert(borrow) {
+      const items  = this._load();
+      const record = { ...borrow, id: this._newId(items) };
+      items.unshift(record);
+      this._save(items);
+      return Promise.resolve(record);
+    },
+
+    update(id, changes) {
+      const items = this._load();
+      const idx = items.findIndex(i => i.id === id);
+      if (idx === -1) return Promise.reject(new Error('Not found'));
+      items[idx] = { ...items[idx], ...changes };
+      this._save(items);
+      return Promise.resolve(items[idx]);
+    },
+
+    remove(id) {
+      this._save(this._load().filter(i => i.id !== id));
+      return Promise.resolve(true);
+    },
+  };
 
   // ----------------------------------------------------------
   // LOCAL STORAGE FALLBACK
@@ -249,7 +378,12 @@ const db = (() => {
   // PUBLIC API
   // Author: Dylan Smith | 2026-03-04
   // ----------------------------------------------------------
-  return { init, isCloud, auth, getAll, insert, update, remove, getCategories, getWriteoffReasons };
+  return {
+    init, isCloud, auth,
+    getAll, insert, update, remove,
+    getCategories, getWriteoffReasons,
+    borrows: { getAll: borrowGetAll, insert: borrowInsert, update: borrowUpdate, remove: borrowRemove },
+  };
 })();
 
 if (typeof module !== 'undefined') module.exports = db;

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mockup B — Bold Mode Tabs</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue:        #1d6fcc;
+      --blue-hover:  #155aa0;
+      --blue-light:  #e8f1fb;
+      --blue-bg:     #f0f6ff;
+
+      --purple:       #6d28d9;
+      --purple-hover: #5b21b6;
+      --purple-light: #ede9fe;
+      --purple-bg:    #f5f3ff;
+
+      --ink:      #1c1c1e;
+      --ink-soft: #3a3a3c;
+      --muted:    #6b6b6e;
+      --border:   #d1d5db;
+      --bg:       #f9fafb;
+      --surface:  #ffffff;
+
+      --font-display: 'Nunito', system-ui, sans-serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+
+      --radius-sm:   6px;
+      --radius-md:   10px;
+      --radius-lg:   16px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+
+      --mode-primary:       var(--blue);
+      --mode-primary-hover: var(--blue-hover);
+      --mode-primary-light: var(--blue-light);
+      --mode-bg:            var(--blue-bg);
+      --mode-tab-bg:        var(--blue);
+    }
+    body.borrow-mode {
+      --mode-primary:       var(--purple);
+      --mode-primary-hover: var(--purple-hover);
+      --mode-primary-light: var(--purple-light);
+      --mode-bg:            var(--purple-bg);
+      --mode-tab-bg:        var(--purple);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .mockup-label {
+      background: #1c1c1e;
+      color: #fff;
+      text-align: center;
+      padding: 8px 16px;
+      font-size: 0.75rem;
+      font-family: var(--font-body);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* ── Header: plain, no toggle ── */
+    .site-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .site-header__logo {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .site-header__logo-accent { color: var(--mode-primary); transition: color 0.3s; }
+
+    /* ── Mode Tabs — full-width bar below header ── */
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 3px solid var(--border);
+      background: var(--surface);
+    }
+    .mode-tab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 24px;
+      border: none;
+      background: transparent;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -3px;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      letter-spacing: 0.01em;
+    }
+    .mode-tab:hover { background: var(--bg); }
+    .mode-tab.active { color: var(--mode-primary); border-bottom-color: var(--mode-primary); }
+    .mode-tab__icon {
+      font-size: 1.3rem;
+    }
+    .mode-tab__count {
+      background: var(--mode-primary-light);
+      color: var(--mode-primary);
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      font-family: var(--font-body);
+      transition: background 0.3s, color 0.3s;
+    }
+    .mode-tab:not(.active) .mode-tab__count {
+      background: var(--bg);
+      color: var(--muted);
+    }
+
+    /* ── Mode banner strip ── */
+    .mode-banner {
+      background: var(--mode-bg);
+      border-bottom: 1px solid var(--mode-primary-light);
+      padding: 10px 24px;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--mode-primary);
+      transition: background 0.3s, color 0.3s;
+    }
+    .mode-banner strong { font-weight: 700; }
+
+    /* ── Main ── */
+    .main { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+
+    /* ── Stats ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-card__num {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .stat-card__num--out  { color: var(--mode-primary); transition: color 0.3s; }
+    .stat-card__num--over { color: #c0392b; }
+    .stat-card__label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Add form ── */
+    .add-form {
+      background: var(--surface);
+      border: 2px solid var(--mode-primary-light);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.3s;
+    }
+    .add-form__title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-field { display: flex; flex-direction: column; gap: 4px; }
+    .form-field label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .form-field input, .form-field select {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 9px 12px;
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      color: var(--ink);
+      background: var(--surface);
+      height: 40px;
+      transition: border-color 0.15s;
+    }
+    .form-field input:focus, .form-field select:focus {
+      outline: none;
+      border-color: var(--mode-primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--mode-primary) 12%, transparent);
+    }
+    .form-row-submit {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-primary {
+      background: var(--mode-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 10px 22px;
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: var(--mode-primary-hover); }
+
+    /* ── Cards ── */
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--ink-soft);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .card-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--mode-primary);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.3s;
+    }
+    .card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .card--overdue {
+      border-color: #c0392b;
+      border-left-color: #c0392b;
+      background: #fdf8f8;
+    }
+    .card__body { flex: 1; }
+    .card__name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .card__meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .badge--mode {
+      background: var(--mode-primary-light);
+      color: var(--mode-primary);
+      transition: background 0.3s, color 0.3s;
+    }
+    .badge--overdue { background: #fdf0ee; color: #c0392b; }
+    .card__actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-ghost {
+      background: var(--mode-primary-light);
+      color: var(--mode-primary);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 7px 14px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-ghost:hover { background: var(--mode-primary); color: #fff; }
+    .btn-danger {
+      background: #fdf0ee;
+      color: #c0392b;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    [data-loan-only], [data-borrow-only] { }
+    body:not(.borrow-mode) [data-borrow-only] { display: none; }
+    body.borrow-mode [data-loan-only] { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="mockup-label">Mockup B — Bold Mode Tabs &nbsp;|&nbsp; Loans = Blue · Borrows = Purple &nbsp;|&nbsp; Click a tab to switch</div>
+
+<header class="site-header">
+  <div class="site-header__logo">Dude, where's my <span class="site-header__logo-accent">stuff?</span></div>
+  <span style="font-size:0.78rem; color:var(--muted);">you@example.com</span>
+</header>
+
+<!-- THE TABS -->
+<nav class="mode-tabs">
+  <button class="mode-tab active" id="tabLoan" onclick="setMode('loan')">
+    <span class="mode-tab__icon">📤</span>
+    My Loans
+    <span class="mode-tab__count" id="loanCount">5 out</span>
+  </button>
+  <button class="mode-tab" id="tabBorrow" onclick="setMode('borrow')">
+    <span class="mode-tab__icon">📥</span>
+    My Borrows
+    <span class="mode-tab__count" id="borrowCount">3 out</span>
+  </button>
+</nav>
+
+<!-- Context banner -->
+<div class="mode-banner">
+  <span data-loan-only>Tracking <strong>things you've lent out</strong> to others</span>
+  <span data-borrow-only>Tracking <strong>things you've borrowed</strong> from others — remember to return them!</span>
+</div>
+
+<main class="main">
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-card__num stat-card__num--out" data-loan-only>5</div>
+      <div class="stat-card__num stat-card__num--out" data-borrow-only>3</div>
+      <div class="stat-card__label" data-loan-only>Out on Loan</div>
+      <div class="stat-card__label" data-borrow-only>Borrowing Now</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__num stat-card__num--over">1</div>
+      <div class="stat-card__label">Overdue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__num" style="color:var(--muted)" data-loan-only>12</div>
+      <div class="stat-card__num" style="color:var(--muted)" data-borrow-only>8</div>
+      <div class="stat-card__label" data-loan-only>Returned</div>
+      <div class="stat-card__label" data-borrow-only>Given Back</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__num" style="color:var(--muted)">17</div>
+      <div class="stat-card__label">Total</div>
+    </div>
+  </div>
+
+  <div class="add-form">
+    <div class="add-form__title" data-loan-only>+ Record a new loan</div>
+    <div class="add-form__title" data-borrow-only>+ Record something you borrowed</div>
+
+    <div data-loan-only>
+      <div class="form-grid form-grid--3">
+        <div class="form-field"><label>What is it?</label><input type="text" placeholder="Circular saw" /></div>
+        <div class="form-field"><label>Category</label><select><option>Tool</option><option>Book</option><option>Clothing</option><option>Media</option><option>Other</option></select></div>
+        <div class="form-field"><label>Lent to</label><input type="text" placeholder="Marcus" /></div>
+        <div class="form-field"><label>Date lent</label><input type="date" value="2026-05-10" /></div>
+        <div class="form-field"><label>Due back</label><input type="date" value="2026-05-24" /></div>
+        <div class="form-field"><label>Notes</label><input type="text" placeholder="Optional..." /></div>
+      </div>
+    </div>
+    <div data-borrow-only>
+      <div class="form-grid form-grid--3">
+        <div class="form-field"><label>What is it?</label><input type="text" placeholder="Pressure washer" /></div>
+        <div class="form-field"><label>Category</label><select><option>Tool</option><option>Book</option><option>Clothing</option><option>Media</option><option>Other</option></select></div>
+        <div class="form-field"><label>Borrowed from</label><input type="text" placeholder="Dave" /></div>
+        <div class="form-field"><label>Date borrowed</label><input type="date" value="2026-05-15" /></div>
+        <div class="form-field"><label>Return by</label><input type="date" value="2026-05-29" /></div>
+        <div class="form-field"><label>Notes</label><input type="text" placeholder="Optional..." /></div>
+      </div>
+    </div>
+    <div class="form-row-submit">
+      <button class="btn-primary" data-loan-only>+ Add Loan</button>
+      <button class="btn-primary" data-borrow-only>+ Add Borrow</button>
+    </div>
+  </div>
+
+  <div class="section-title" data-loan-only>Currently Out on Loan</div>
+  <div class="section-title" data-borrow-only>Things I'm Borrowing</div>
+
+  <div class="card-list">
+    <div class="card" data-loan-only>
+      <div class="card__body">
+        <div class="card__name">Circular Saw <span class="badge badge--mode">Tool</span></div>
+        <div class="card__meta">
+          <span>To: <strong>Marcus</strong></span>
+          <span>Since May 10</span>
+          <span>Due May 24</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+    <div class="card card--overdue" data-loan-only>
+      <div class="card__body">
+        <div class="card__name">The Design of Everyday Things <span class="badge badge--mode">Book</span> <span class="badge badge--overdue">Overdue</span></div>
+        <div class="card__meta">
+          <span>To: <strong>Priya</strong></span>
+          <span>Since Apr 1</span>
+          <span style="color:#c0392b; font-weight:600;">Was due Apr 30</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+    <div class="card" data-loan-only>
+      <div class="card__body">
+        <div class="card__name">Winter Jacket <span class="badge badge--mode">Clothing</span></div>
+        <div class="card__meta">
+          <span>To: <strong>Jamie</strong></span>
+          <span>Since May 1</span>
+          <span>No due date</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+
+    <div class="card" data-borrow-only>
+      <div class="card__body">
+        <div class="card__name">Pressure Washer <span class="badge badge--mode">Tool</span></div>
+        <div class="card__meta">
+          <span>From: <strong>Dave</strong></span>
+          <span>Since May 15</span>
+          <span>Return by May 29</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned it</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+    <div class="card card--overdue" data-borrow-only>
+      <div class="card__body">
+        <div class="card__name">Stand Mixer <span class="badge badge--mode">Other</span> <span class="badge badge--overdue">Overdue</span></div>
+        <div class="card__meta">
+          <span>From: <strong>Mum</strong></span>
+          <span>Since Mar 20</span>
+          <span style="color:#c0392b; font-weight:600;">Was due Apr 20</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned it</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+    <div class="card" data-borrow-only>
+      <div class="card__body">
+        <div class="card__name">Dune <span class="badge badge--mode">Book</span></div>
+        <div class="card__meta">
+          <span>From: <strong>Alex</strong></span>
+          <span>Since May 5</span>
+          <span>No due date</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned it</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  function setMode(mode) {
+    const body = document.body;
+    document.getElementById('tabLoan').classList.toggle('active', mode === 'loan');
+    document.getElementById('tabBorrow').classList.toggle('active', mode === 'borrow');
+    if (mode === 'borrow') {
+      body.classList.add('borrow-mode');
+    } else {
+      body.classList.remove('borrow-mode');
+    }
+  }
+</script>
+</body>
+</html>

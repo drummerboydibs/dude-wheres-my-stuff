@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mockup A — Header Toggle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --blue:         #1d6fcc;
+      --blue-hover:   #155aa0;
+      --blue-light:   #e8f1fb;
+      --amber:        #b45309;
+      --amber-hover:  #92400e;
+      --amber-light:  #fef3c7;
+
+      --ink:      #1c1c1e;
+      --ink-soft: #3a3a3c;
+      --muted:    #6b6b6e;
+      --border:   #d1d5db;
+      --bg:       #f9fafb;
+      --surface:  #ffffff;
+
+      --font-display: 'Nunito', system-ui, sans-serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+
+      --radius-sm:   6px;
+      --radius-md:   10px;
+      --radius-lg:   16px;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+
+      /* Active mode colors — swapped by JS */
+      --mode-primary:       var(--blue);
+      --mode-primary-hover: var(--blue-hover);
+      --mode-primary-light: var(--blue-light);
+    }
+    body.borrow-mode {
+      --mode-primary:       var(--amber);
+      --mode-primary-hover: var(--amber-hover);
+      --mode-primary-light: var(--amber-light);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Label ── */
+    .mockup-label {
+      background: #1c1c1e;
+      color: #fff;
+      text-align: center;
+      padding: 8px 16px;
+      font-size: 0.75rem;
+      font-family: var(--font-body);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* ── Header ── */
+    .site-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      gap: 16px;
+    }
+    .site-header__logo {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .site-header__logo-accent { color: var(--mode-primary); transition: color 0.3s; }
+
+    /* ── Mode Toggle (pill in header) ── */
+    .mode-toggle {
+      display: flex;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: 3px;
+      gap: 2px;
+    }
+    .mode-toggle__btn {
+      border: none;
+      border-radius: var(--radius-full);
+      padding: 6px 18px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      background: transparent;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .mode-toggle__btn.active {
+      background: var(--mode-primary);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Main content ── */
+    .main { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+
+    /* ── Stats ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-card__num {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .stat-card__num--out   { color: var(--mode-primary); transition: color 0.3s; }
+    .stat-card__num--over  { color: #c0392b; }
+    .stat-card__label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Add form ── */
+    .add-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .add-form__title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .add-form__title-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--mode-primary);
+      transition: background 0.3s;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-field { display: flex; flex-direction: column; gap: 4px; }
+    .form-field label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .form-field input, .form-field select {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 9px 12px;
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      color: var(--ink);
+      background: var(--surface);
+      transition: border-color 0.15s;
+      height: 40px;
+    }
+    .form-field input:focus, .form-field select:focus {
+      outline: none;
+      border-color: var(--mode-primary);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+    }
+    .form-row-submit {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-primary {
+      background: var(--mode-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 10px 22px;
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: var(--mode-primary-hover); }
+
+    /* ── Cards ── */
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--ink-soft);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .card-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .card--overdue {
+      border-color: #c0392b;
+      background: #fdf8f8;
+    }
+    .card__body { flex: 1; }
+    .card__name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+    .card__meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .card__meta-item { display: flex; align-items: center; gap: 4px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .badge--mode {
+      background: var(--mode-primary-light);
+      color: var(--mode-primary);
+      transition: background 0.3s, color 0.3s;
+    }
+    .badge--overdue { background: #fdf0ee; color: #c0392b; }
+    .card__actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-ghost {
+      background: var(--mode-primary-light);
+      color: var(--mode-primary);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 7px 14px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-ghost:hover { background: var(--mode-primary); color: #fff; }
+    .btn-danger {
+      background: #fdf0ee;
+      color: #c0392b;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* hidden/shown based on mode */
+    [data-loan-only], [data-borrow-only] { transition: opacity 0.2s; }
+    body:not(.borrow-mode) [data-borrow-only] { display: none; }
+    body.borrow-mode [data-loan-only] { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="mockup-label">Mockup A — Header Toggle &nbsp;|&nbsp; Loans = Blue · Borrows = Amber &nbsp;|&nbsp; Click the toggle to switch modes</div>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="site-header__logo">
+    Dude, where's my <span class="site-header__logo-accent">stuff?</span>
+  </div>
+
+  <!-- THE TOGGLE -->
+  <div class="mode-toggle" role="group" aria-label="Mode">
+    <button class="mode-toggle__btn active" id="btnLoan" onclick="setMode('loan')">📤 Loans</button>
+    <button class="mode-toggle__btn"        id="btnBorrow" onclick="setMode('borrow')">📥 Borrows</button>
+  </div>
+
+  <span style="font-size:0.78rem; color:var(--muted);">you@example.com</span>
+</header>
+
+<main class="main">
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-card__num stat-card__num--out" data-loan-only>5</div>
+      <div class="stat-card__num stat-card__num--out" data-borrow-only>3</div>
+      <div class="stat-card__label" data-loan-only>Out on Loan</div>
+      <div class="stat-card__label" data-borrow-only>Currently Borrowing</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__num stat-card__num--over">1</div>
+      <div class="stat-card__label">Overdue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__num" style="color:var(--muted)" data-loan-only>12</div>
+      <div class="stat-card__num" style="color:var(--muted)" data-borrow-only>8</div>
+      <div class="stat-card__label" data-loan-only>Returned</div>
+      <div class="stat-card__label" data-borrow-only>Returned to Owner</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__num" style="color:var(--muted)">17</div>
+      <div class="stat-card__label">Total</div>
+    </div>
+  </div>
+
+  <!-- Add Form -->
+  <div class="add-form">
+    <div class="add-form__title">
+      <span class="add-form__title-dot"></span>
+      <span data-loan-only>Record a Loan</span>
+      <span data-borrow-only>Record a Borrow</span>
+    </div>
+
+    <!-- Loan fields -->
+    <div data-loan-only>
+      <div class="form-grid form-grid--3">
+        <div class="form-field">
+          <label>What is it?</label>
+          <input type="text" placeholder="Circular saw" />
+        </div>
+        <div class="form-field">
+          <label>Category</label>
+          <select><option>Tool</option><option>Book</option><option>Clothing</option><option>Media</option><option>Other</option></select>
+        </div>
+        <div class="form-field">
+          <label>Lent to</label>
+          <input type="text" placeholder="Marcus" />
+        </div>
+        <div class="form-field">
+          <label>Date lent</label>
+          <input type="date" value="2026-05-10" />
+        </div>
+        <div class="form-field">
+          <label>Due back</label>
+          <input type="date" value="2026-05-24" />
+        </div>
+        <div class="form-field">
+          <label>Notes</label>
+          <input type="text" placeholder="Optional..." />
+        </div>
+      </div>
+    </div>
+
+    <!-- Borrow fields -->
+    <div data-borrow-only>
+      <div class="form-grid form-grid--3">
+        <div class="form-field">
+          <label>What is it?</label>
+          <input type="text" placeholder="Pressure washer" />
+        </div>
+        <div class="form-field">
+          <label>Category</label>
+          <select><option>Tool</option><option>Book</option><option>Clothing</option><option>Media</option><option>Other</option></select>
+        </div>
+        <div class="form-field">
+          <label>Borrowed from</label>
+          <input type="text" placeholder="Dave" />
+        </div>
+        <div class="form-field">
+          <label>Date borrowed</label>
+          <input type="date" value="2026-05-15" />
+        </div>
+        <div class="form-field">
+          <label>Return by</label>
+          <input type="date" value="2026-05-29" />
+        </div>
+        <div class="form-field">
+          <label>Notes</label>
+          <input type="text" placeholder="Optional..." />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row-submit">
+      <button class="btn-primary" data-loan-only>+ Add Loan</button>
+      <button class="btn-primary" data-borrow-only>+ Add Borrow</button>
+    </div>
+  </div>
+
+  <!-- Active items -->
+  <div class="section-title" data-loan-only>Currently Out on Loan</div>
+  <div class="section-title" data-borrow-only>Things I'm Borrowing</div>
+
+  <div class="card-list">
+
+    <!-- Loan cards -->
+    <div class="card" data-loan-only>
+      <div class="card__body">
+        <div class="card__name">Circular Saw &nbsp;<span class="badge badge--mode">Tool</span></div>
+        <div class="card__meta">
+          <span class="card__meta-item">To: <strong>Marcus</strong></span>
+          <span class="card__meta-item">Since May 10</span>
+          <span class="card__meta-item">Due May 24</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+
+    <div class="card card--overdue" data-loan-only>
+      <div class="card__body">
+        <div class="card__name">The Design of Everyday Things &nbsp;<span class="badge badge--mode">Book</span> &nbsp;<span class="badge badge--overdue">Overdue</span></div>
+        <div class="card__meta">
+          <span class="card__meta-item">To: <strong>Priya</strong></span>
+          <span class="card__meta-item">Since Apr 1</span>
+          <span class="card__meta-item" style="color:#c0392b; font-weight:600;">Was due Apr 30</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+
+    <div class="card" data-loan-only>
+      <div class="card__body">
+        <div class="card__name">Winter Jacket &nbsp;<span class="badge badge--mode">Clothing</span></div>
+        <div class="card__meta">
+          <span class="card__meta-item">To: <strong>Jamie</strong></span>
+          <span class="card__meta-item">Since May 1</span>
+          <span class="card__meta-item">No due date</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+
+    <!-- Borrow cards -->
+    <div class="card" data-borrow-only>
+      <div class="card__body">
+        <div class="card__name">Pressure Washer &nbsp;<span class="badge badge--mode">Tool</span></div>
+        <div class="card__meta">
+          <span class="card__meta-item">From: <strong>Dave</strong></span>
+          <span class="card__meta-item">Since May 15</span>
+          <span class="card__meta-item">Return by May 29</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned it</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+
+    <div class="card card--overdue" data-borrow-only>
+      <div class="card__body">
+        <div class="card__name">Stand Mixer &nbsp;<span class="badge badge--mode">Other</span> &nbsp;<span class="badge badge--overdue">Overdue</span></div>
+        <div class="card__meta">
+          <span class="card__meta-item">From: <strong>Mum</strong></span>
+          <span class="card__meta-item">Since Mar 20</span>
+          <span class="card__meta-item" style="color:#c0392b; font-weight:600;">Was due Apr 20</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned it</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+
+    <div class="card" data-borrow-only>
+      <div class="card__body">
+        <div class="card__name">Dune &nbsp;<span class="badge badge--mode">Book</span></div>
+        <div class="card__meta">
+          <span class="card__meta-item">From: <strong>Alex</strong></span>
+          <span class="card__meta-item">Since May 5</span>
+          <span class="card__meta-item">No due date</span>
+        </div>
+      </div>
+      <div class="card__actions">
+        <button class="btn-ghost">✓ Returned it</button>
+        <button class="btn-danger">✕</button>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+  function setMode(mode) {
+    const body = document.body;
+    const btnLoan   = document.getElementById('btnLoan');
+    const btnBorrow = document.getElementById('btnBorrow');
+    if (mode === 'borrow') {
+      body.classList.add('borrow-mode');
+      btnBorrow.classList.add('active');
+      btnLoan.classList.remove('active');
+    } else {
+      body.classList.remove('borrow-mode');
+      btnLoan.classList.add('active');
+      btnBorrow.classList.remove('active');
+    }
+  }
+</script>
+</body>
+</html>
