@@ -1187,6 +1187,177 @@ body {
 }
 .config-panel__hint a:hover { color: var(--color-primary-hover); }
 
+/* --- Landing (pre-auth splash) ---------------------------- */
+/*
+ * Shown above the auth form when the user is not yet engaged.
+ * Sits inside .auth-gate so it inherits the gradient backdrop,
+ * but replaces the auth card with a wider hero card that pitches
+ * the app and routes the user into Sign In or Create Account.
+ */
+.landing-card {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10) var(--space-8);
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.landing-card__logo {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-extrabold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--color-ink);
+  margin-bottom: var(--space-8);
+}
+.landing-card__logo-accent { color: var(--color-primary); }
+
+.landing-card__hero {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+  margin-bottom: var(--space-5);
+}
+
+.landing-card__pitch {
+  font-size: var(--text-base);
+  color: var(--color-muted);
+  line-height: var(--leading-normal);
+  margin-bottom: var(--space-6);
+  max-width: 42ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-card__features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+  text-align: left;
+}
+
+.landing-card__feature {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-base);
+  color: var(--color-ink-soft);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.landing-card__feature-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.landing-card__feature strong {
+  color: var(--color-ink);
+  font-weight: var(--weight-semibold);
+}
+
+.landing-card__cta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.landing-card__cta-primary {
+  width: 100%;
+  font-size: var(--text-md);
+  padding: var(--space-4) var(--space-6);
+  min-height: 52px;
+}
+
+.landing-card__cta-secondary {
+  background: transparent;
+  border: var(--border-width-thick) solid var(--color-border);
+  color: var(--color-ink-soft);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 44px;
+}
+.landing-card__cta-secondary:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+.landing-card__cta-secondary:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* --- Rotator (lent / borrowed crossfade) ------------------ */
+/*
+ * Two words layered in the same spot, fading in/out on opposite
+ * halves of a 6s cycle. A visibility-hidden spacer reserves the
+ * width of the longer word ("borrowed") so the headline doesn't
+ * reflow when the words swap.
+ */
+.rotator {
+  position: relative;
+  display: inline-block;
+  vertical-align: baseline;
+  text-align: center;
+}
+.rotator__spacer {
+  visibility: hidden;
+  display: inline-block;
+}
+.rotator__word {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  opacity: 0;
+  text-align: center;
+  font-weight: var(--weight-extrabold);
+}
+.rotator__word--lent {
+  color: #1d6fcc;
+  animation: rotator-lent 6s ease-in-out infinite;
+}
+.rotator__word--borrowed {
+  color: #b45309;
+  animation: rotator-borrowed 6s ease-in-out infinite;
+}
+@keyframes rotator-lent {
+  0%, 42%  { opacity: 1; transform: translateY(0); }
+  50%, 92% { opacity: 0; transform: translateY(-4px); }
+  100%     { opacity: 1; transform: translateY(0); }
+}
+@keyframes rotator-borrowed {
+  0%, 42%  { opacity: 0; transform: translateY(4px); }
+  50%, 92% { opacity: 1; transform: translateY(0); }
+  100%     { opacity: 0; transform: translateY(4px); }
+}
+/* Dark-mode: brighten the rotator colors to match the brighter
+   primary/warning tokens used in the rest of the dark theme. */
+:root[data-theme="dark"] .rotator__word--lent     { color: #4a9ef8; }
+:root[data-theme="dark"] .rotator__word--borrowed { color: #fbbf24; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rotator__word--lent     { color: #4a9ef8; }
+  :root:not([data-theme="light"]) .rotator__word--borrowed { color: #fbbf24; }
+}
+
 /* --- Modal / Overlay -------------------------------------- */
 .overlay {
   position: fixed;
@@ -1348,6 +1519,12 @@ body {
   .auth-card {
     padding: var(--space-8) var(--space-5);
   }
+
+  .landing-card {
+    padding: var(--space-8) var(--space-5);
+  }
+  .landing-card__hero { font-size: var(--text-xl); }
+  .landing-card__logo { font-size: var(--text-md); }
 
   .modal {
     padding: var(--space-6);

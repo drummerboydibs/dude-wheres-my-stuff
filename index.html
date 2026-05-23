@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
 
@@ -28,12 +28,67 @@
 
 <!-- ============================================================
      AUTH GATE
-     Author: Dylan Smith | 2026-03-04
+     Author: Dylan Smith | 2026-03-04 / 2026-05-23
      Shown fullscreen when the user is not logged in.
+     Contains two cards: the landing splash (shown first) and the
+     auth card (shown after the user picks Sign In or Get Started).
      Hidden once a valid session exists.
      ============================================================ -->
 <div class="auth-gate" id="authGate">
-  <div class="auth-card">
+
+  <!-- LANDING — pre-auth splash explaining the app -->
+  <div class="landing-card" id="landingCard">
+
+    <div class="landing-card__logo">Dude, where's my <span class="landing-card__logo-accent">stuff?</span></div>
+
+    <h1 class="landing-card__hero">
+      Keep track of what you've
+      <span class="rotator" aria-label="lent or borrowed">
+        <span class="rotator__spacer" aria-hidden="true">borrowed</span>
+        <span class="rotator__word rotator__word--lent">lent</span>
+        <span class="rotator__word rotator__word--borrowed">borrowed</span>
+      </span>
+    </h1>
+
+    <p class="landing-card__pitch">
+      The simple way to remember who has your stuff &mdash; and whose stuff
+      you have. No more awkward &ldquo;hey, did I ever give that back?&rdquo;
+    </p>
+
+    <div class="landing-card__features">
+      <div class="landing-card__feature">
+        <span class="landing-card__feature-icon" aria-hidden="true">&#128228;</span>
+        <span><strong>Log a loan in seconds.</strong> Item, person, date &mdash; done.</span>
+      </div>
+      <div class="landing-card__feature">
+        <span class="landing-card__feature-icon" aria-hidden="true">&#128229;</span>
+        <span><strong>Track what you've borrowed.</strong> Return it before they ask.</span>
+      </div>
+      <div class="landing-card__feature">
+        <span class="landing-card__feature-icon" aria-hidden="true">&#9202;&#65039;</span>
+        <span><strong>Catch overdue items.</strong> See at a glance what&rsquo;s been out too long.</span>
+      </div>
+    </div>
+
+    <div class="landing-card__cta">
+      <button class="btn btn--primary landing-card__cta-primary" type="button" onclick="showAuthForm('signup')">
+        Get Started &mdash; It's Free
+      </button>
+      <button class="landing-card__cta-secondary" type="button" onclick="showAuthForm('signin')">
+        I already have an account &middot; Sign In
+      </button>
+    </div>
+  </div>
+
+  <!-- AUTH CARD — config + sign-in/sign-up forms -->
+  <div class="auth-card" id="authCard" style="display:none;">
+
+    <div style="text-align:left; margin-bottom: var(--space-3);">
+      <button type="button" id="backToLandingBtn" onclick="showLanding()"
+        style="background:none;border:none;font-family:var(--font-body);font-size:var(--text-xs);color:var(--color-muted);cursor:pointer;letter-spacing:var(--tracking-wide);text-transform:uppercase;font-weight:var(--weight-medium);padding:0;">
+        &larr; Back
+      </button>
+    </div>
 
     <div class="auth-card__logo">Dude, where's my <span class="auth-card__logo-accent">stuff?</span></div>
     <span class="auth-card__tagline">Sign in to your account</span>
@@ -79,14 +134,6 @@
         </div>
         <button class="btn btn--primary auth-form__submit" id="authSubmitBtn" onclick="handleAuthSubmit()">
           <span id="authSubmitLabel">Sign In</span>
-        </button>
-      </div>
-
-      <div id="changeProjectRow" style="margin-top: var(--space-4); text-align:right;">
-        <button
-          style="background:none;border:none;font-family:var(--font-body);font-size:var(--text-xs);color:var(--color-muted);cursor:pointer;letter-spacing:var(--tracking-wide);text-transform:uppercase;font-weight:var(--weight-medium);"
-          onclick="clearConfig()">
-          &larr; Change project
         </button>
       </div>
     </div>
@@ -404,7 +451,7 @@
 
 <!-- FOOTER -->
 <footer class="site-footer">
-  Built by DrummerBoyDibs using <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
+  Built by Dylan Smith using <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
 </footer>
 
 <script src="config.js" onerror="this.remove()"></script>
@@ -417,10 +464,6 @@
 // ============================================================
 const CONFIG_URL_KEY = 'loanlist_supabase_url';
 const CONFIG_KEY_KEY = 'loanlist_supabase_key';
-
-function isConfigBaked() {
-  return !!(window.LOAN_LIST_SUPABASE_URL && window.LOAN_LIST_SUPABASE_KEY);
-}
 
 function getConfig() {
   return {
@@ -441,17 +484,9 @@ async function saveConfig() {
   await initSupabase(url, key);
 }
 
-function clearConfig() {
-  localStorage.removeItem(CONFIG_URL_KEY);
-  localStorage.removeItem(CONFIG_KEY_KEY);
-  document.getElementById('authConfigSection').style.display = '';
-  document.getElementById('authFormSection').style.display = 'none';
-  clearMsg('authMessage');
-}
-
 // ============================================================
 // AUTH GATE UI
-// Author: Dylan Smith | 2026-03-04
+// Author: Dylan Smith | 2026-03-04 / 2026-05-23
 // ============================================================
 let currentTab = 'signin';
 
@@ -462,6 +497,37 @@ function switchTab(tab) {
   document.getElementById('authSubmitLabel').textContent = tab === 'signin' ? 'Sign In' : 'Create Account';
   document.getElementById('authPassword').autocomplete = tab === 'signin' ? 'current-password' : 'new-password';
   clearMsg('authMessage');
+}
+
+// Show the landing splash; hide the auth card.
+function showLanding() {
+  document.getElementById('landingCard').style.display = '';
+  document.getElementById('authCard').style.display    = 'none';
+  clearMsg('authMessage');
+}
+
+// Show the auth card with the form section visible on the given tab.
+// Called from the landing's CTA buttons.
+function showAuthForm(tab) {
+  document.getElementById('landingCard').style.display = 'none';
+  document.getElementById('authCard').style.display    = '';
+  document.getElementById('authConfigSection').style.display = 'none';
+  document.getElementById('authFormSection').style.display   = '';
+  document.getElementById('backToLandingBtn').parentElement.style.display = '';
+  switchTab(tab || 'signin');
+  setTimeout(() => document.getElementById('authEmail').focus(), 50);
+}
+
+// Show the auth card with the Supabase config section visible.
+// Used when no project credentials are available yet. The back-to-
+// landing button is hidden here because clicking a landing CTA
+// would just bounce the user right back to this screen.
+function showAuthConfig() {
+  document.getElementById('landingCard').style.display = 'none';
+  document.getElementById('authCard').style.display    = '';
+  document.getElementById('authConfigSection').style.display = '';
+  document.getElementById('authFormSection').style.display   = 'none';
+  document.getElementById('backToLandingBtn').parentElement.style.display = 'none';
 }
 
 function showMsg(id, text, type = 'error') {
@@ -518,6 +584,8 @@ function showApp(session) {
 function showAuthGate() {
   document.getElementById('authGate').classList.remove('auth-gate--hidden');
   document.getElementById('mainApp').style.display = 'none';
+  // Default to the landing splash when the gate (re)appears.
+  showLanding();
   loans = [];
   borrows = [];
   renderLoans();
@@ -538,20 +606,21 @@ async function initSupabase(url, key) {
   try {
     await db.init(url, key);
 
-    document.getElementById('authConfigSection').style.display = 'none';
-    document.getElementById('authFormSection').style.display = '';
-
     db.auth.onAuthStateChange((_event, session) => {
       if (session) showApp(session);
       else         showAuthGate();
     });
 
     const session = await db.auth.getSession();
-    if (session) showApp(session);
+    if (session) {
+      showApp(session);
+    } else {
+      // Supabase ready, no session yet — show the landing splash.
+      showLanding();
+    }
 
   } catch (err) {
-    document.getElementById('authConfigSection').style.display = '';
-    document.getElementById('authFormSection').style.display = 'none';
+    showAuthConfig();
     showMsg('configMessage', `Could not connect: ${err.message}`, 'error');
   }
 }
@@ -1224,14 +1293,15 @@ document.getElementById('fBorrowDate').value = new Date().toISOString().split('T
 
 // Auto-init from baked or saved credentials
 (async () => {
-  if (isConfigBaked()) {
-    document.getElementById('changeProjectRow').style.display = 'none';
-  }
   const { url, key } = getConfig();
   if (url && key) {
     document.getElementById('cfgUrl').value = url;
     document.getElementById('cfgKey').value = key;
     await initSupabase(url, key);
+  } else {
+    // No Supabase credentials — skip the landing splash and go
+    // straight to the one-time setup panel.
+    showAuthConfig();
   }
 })();
 </script>
