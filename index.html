@@ -22,7 +22,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="stylesheet" href="styles.css?v=9" />
 </head>
 <body>
 
@@ -79,6 +79,9 @@
       <button class="landing-card__cta-secondary" type="button" onclick="showAuthForm('signin')">
         I already have an account &middot; Sign In
       </button>
+      <button class="landing-card__cta-demo" type="button" onclick="startDemo()">
+        Just looking? Try a demo &mdash; no signup needed &rarr;
+      </button>
     </div>
   </div>
 
@@ -95,49 +98,25 @@
     <div class="auth-card__logo">Dude, where's my <span class="auth-card__logo-accent">stuff?</span></div>
     <span class="auth-card__tagline">Sign in to your account</span>
 
-    <!-- Supabase config (shown if no credentials saved yet) -->
-    <div id="authConfigSection">
-      <div class="config-panel u-mb-4" style="position:relative;">
-        <span class="config-panel__label-tag">One-time Setup</span>
-        <p class="config-panel__hint">
-          Enter your <a href="https://supabase.com" target="_blank" rel="noopener noreferrer">Supabase</a>
-          project URL and anon key. See <code>README.md</code> for the full setup guide.
-        </p>
-        <div class="form-field u-mb-3">
-          <label class="form-field__label">Project URL</label>
-          <input class="form-field__input" type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co" />
-        </div>
-        <div class="form-field u-mb-4">
-          <label class="form-field__label">Anon Key</label>
-          <input class="form-field__input" type="password" id="cfgKey" placeholder="eyJh..." />
-        </div>
-        <button class="btn btn--primary" onclick="saveConfig()">Save &amp; Continue</button>
-      </div>
-      <div class="auth-message" id="configMessage"></div>
+    <div class="auth-tabs">
+      <button class="auth-tab auth-tab--active" id="tabSignIn" onclick="switchTab('signin')">Sign In</button>
+      <button class="auth-tab" id="tabSignUp" onclick="switchTab('signup')">Create Account</button>
     </div>
 
-    <!-- Login / Signup tabs (shown once Supabase is configured) -->
-    <div id="authFormSection" style="display:none;">
-      <div class="auth-tabs">
-        <button class="auth-tab auth-tab--active" id="tabSignIn" onclick="switchTab('signin')">Sign In</button>
-        <button class="auth-tab" id="tabSignUp" onclick="switchTab('signup')">Create Account</button>
-      </div>
+    <div class="auth-message" id="authMessage"></div>
 
-      <div class="auth-message" id="authMessage"></div>
-
-      <div class="auth-form">
-        <div class="form-field">
-          <label class="form-field__label">Email</label>
-          <input class="form-field__input" type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" />
-        </div>
-        <div class="form-field">
-          <label class="form-field__label">Password</label>
-          <input class="form-field__input" type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" />
-        </div>
-        <button class="btn btn--primary auth-form__submit" id="authSubmitBtn" onclick="handleAuthSubmit()">
-          <span id="authSubmitLabel">Sign In</span>
-        </button>
+    <div class="auth-form">
+      <div class="form-field">
+        <label class="form-field__label">Email</label>
+        <input class="form-field__input" type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" />
       </div>
+      <div class="form-field">
+        <label class="form-field__label">Password</label>
+        <input class="form-field__input" type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button class="btn btn--primary auth-form__submit" id="authSubmitBtn" onclick="handleAuthSubmit()">
+        <span id="authSubmitLabel">Sign In</span>
+      </button>
     </div>
 
   </div>
@@ -151,6 +130,16 @@
      ============================================================ -->
 <div class="u-page-wrapper" id="mainApp" style="display:none;">
   <a id="main-content" tabindex="-1"></a>
+
+  <!-- DEMO-MODE BANNER — shown only while the visitor is exploring
+       the app with seeded sample data (no real account yet).      -->
+  <div class="demo-banner" id="demoBanner" style="display:none;">
+    <span class="demo-banner__icon" aria-hidden="true">&#9728;&#65039;</span>
+    <span class="demo-banner__text">
+      You&rsquo;re exploring a demo with sample data.
+      <button type="button" class="demo-banner__cta" onclick="signUpFromDemo()">Sign up to save your data &rarr;</button>
+    </span>
+  </div>
 
   <!-- HEADER -->
   <header class="site-header">
@@ -468,9 +457,10 @@
   Built by Dylan Smith using <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
 </footer>
 
-<script src="config.js" onerror="this.remove()"></script>
+<script src="config.js?v=2" onerror="this.remove()"></script>
 <script src="utils.js"></script>
-<script src="db.js"></script>
-<script src="app.js?v=4"></script>
+<script src="db.js?v=2"></script>
+<script src="demo-seed.js"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

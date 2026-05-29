@@ -1203,41 +1203,6 @@ body {
 }
 .auth-bar__signout:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
-/* --- Config Panel ----------------------------------------- */
-.config-panel {
-  background: var(--color-surface-raised);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  margin-bottom: var(--space-5);
-}
-
-.config-panel__label-tag {
-  display: inline-block;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-widest);
-  text-transform: uppercase;
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-  padding: 3px var(--space-3);
-  border-radius: var(--radius-full);
-  margin-bottom: var(--space-4);
-}
-
-.config-panel__hint {
-  font-size: var(--text-sm);
-  color: var(--color-muted);
-  line-height: var(--leading-normal);
-  margin-bottom: var(--space-4);
-}
-.config-panel__hint a {
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.config-panel__hint a:hover { color: var(--color-primary-hover); }
-
 /* --- Landing (pre-auth splash) ---------------------------- */
 /*
  * Shown above the auth form when the user is not yet engaged.
@@ -1352,6 +1317,76 @@ body {
   background: var(--color-primary-light);
 }
 .landing-card__cta-secondary:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* Tertiary "Try the demo" link — quieter than the other CTAs so
+   it doesn't compete with sign-up, but discoverable for visitors
+   who aren't ready to commit. */
+.landing-card__cta-demo {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-1);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.landing-card__cta-demo:hover {
+  color: var(--color-primary);
+}
+.landing-card__cta-demo:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+  border-radius: var(--radius-sm);
+}
+
+/* --- Demo-mode banner (inside main app) ----------------------- */
+.demo-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-warning-light);
+  border: var(--border-width-thick) solid var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-6);
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+.demo-banner__icon {
+  font-size: var(--text-md);
+  flex-shrink: 0;
+}
+.demo-banner__text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.demo-banner__cta {
+  background: var(--color-warning);
+  border: none;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.demo-banner__cta:hover {
+  background: #8a3f07;
+}
+.demo-banner__cta:focus-visible {
   box-shadow: var(--focus-ring);
   outline: none;
 }

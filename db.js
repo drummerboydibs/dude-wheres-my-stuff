@@ -10,6 +10,8 @@
 
 const db = (() => {
   let _client = null;
+  let _demoMode = false;   // When true, all CRUD routes to the demo store
+                           // even if a Supabase client is connected.
   const TABLE          = 'loans';
   const BORROWS_TABLE  = 'borrows';
   const REASONS_TABLE    = 'writeoff_reasons';
@@ -43,7 +45,36 @@ const db = (() => {
     });
   }
 
-  function isCloud() { return !!_client; }
+  function isCloud() { return !!_client && !_demoMode; }
+  function isConnected() { return !!_client; }   // Supabase init has run
+  function isDemoMode() { return _demoMode; }
+
+  // ----------------------------------------------------------
+  // DEMO MODE
+  // Author: Dylan Smith | 2026-05-28
+  // Lets a visitor try the app without signing up. Seeds a
+  // separate localStorage namespace so demo data never collides
+  // with a real offline user's data, and so a logged-in user
+  // who clicks "Try it out" doesn't poison their own cloud data.
+  // ----------------------------------------------------------
+  function startDemo(seed) {
+    _demoMode = true;
+    _demoLocal._save(seed.loans   || []);
+    _demoBorrowLocal._save(seed.borrows || []);
+  }
+
+  function endDemo() {
+    _demoMode = false;
+    localStorage.removeItem(_demoLocal._key);
+    localStorage.removeItem(_demoBorrowLocal._key);
+  }
+
+  async function getDemoData() {
+    return {
+      loans:   await _demoLocal.getAll(),
+      borrows: await _demoBorrowLocal.getAll(),
+    };
+  }
 
   // ----------------------------------------------------------
   // AUTH
@@ -82,12 +113,17 @@ const db = (() => {
     },
   };
 
+  // Demo mode and the no-Supabase fallback share the same local
+  // CRUD code; these helpers pick the right backing store.
+  function _loanStore()   { return _demoMode ? _demoLocal       : _local; }
+  function _borrowStore() { return _demoMode ? _demoBorrowLocal : _borrowLocal; }
+
   // ----------------------------------------------------------
   // LOANS CRUD
   // Author: Dylan Smith | 2026-03-04
   // ----------------------------------------------------------
   async function getAll() {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { data, error } = await _client
         .from(TABLE)
         .select('*')
@@ -95,11 +131,11 @@ const db = (() => {
       if (error) throw new Error(error.message);
       return data.map(_fromDb);
     }
-    return _local.getAll();
+    return _loanStore().getAll();
   }
 
   async function insert(loan) {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { data: { user } } = await _client.auth.getUser();
       const { data, error } = await _client
         .from(TABLE)
@@ -109,11 +145,11 @@ const db = (() => {
       if (error) throw new Error(error.message);
       return _fromDb(data);
     }
-    return _local.insert(loan);
+    return _loanStore().insert(loan);
   }
 
   async function update(id, changes) {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { data, error } = await _client
         .from(TABLE)
         .update(_toDb(changes))
@@ -123,20 +159,20 @@ const db = (() => {
       if (error) throw new Error(error.message);
       return _fromDb(data);
     }
-    return _local.update(id, changes);
+    return _loanStore().update(id, changes);
   }
 
   async function remove(id) {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { error } = await _client.from(TABLE).delete().eq('id', id);
       if (error) throw new Error(error.message);
       return true;
     }
-    return _local.remove(id);
+    return _loanStore().remove(id);
   }
 
   async function getCategories() {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { data, error } = await _client
         .from(CATEGORIES_TABLE)
         .select('id, name, slug')
@@ -154,7 +190,7 @@ const db = (() => {
   }
 
   async function getWriteoffReasons() {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { data, error } = await _client
         .from(REASONS_TABLE)
         .select('id, name')
@@ -178,7 +214,7 @@ const db = (() => {
   // stored in the borrows table with different column names.
   // ----------------------------------------------------------
   async function borrowGetAll() {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { data, error } = await _client
         .from(BORROWS_TABLE)
         .select('*')
@@ -186,11 +222,11 @@ const db = (() => {
       if (error) throw new Error(error.message);
       return data.map(_borrowFromDb);
     }
-    return _borrowLocal.getAll();
+    return _borrowStore().getAll();
   }
 
   async function borrowInsert(borrow) {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { data: { user } } = await _client.auth.getUser();
       const { data, error } = await _client
         .from(BORROWS_TABLE)
@@ -200,11 +236,11 @@ const db = (() => {
       if (error) throw new Error(error.message);
       return _borrowFromDb(data);
     }
-    return _borrowLocal.insert(borrow);
+    return _borrowStore().insert(borrow);
   }
 
   async function borrowUpdate(id, changes) {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { data, error } = await _client
         .from(BORROWS_TABLE)
         .update(_borrowToDb(changes))
@@ -214,16 +250,16 @@ const db = (() => {
       if (error) throw new Error(error.message);
       return _borrowFromDb(data);
     }
-    return _borrowLocal.update(id, changes);
+    return _borrowStore().update(id, changes);
   }
 
   async function borrowRemove(id) {
-    if (_client) {
+    if (_client && !_demoMode) {
       const { error } = await _client.from(BORROWS_TABLE).delete().eq('id', id);
       if (error) throw new Error(error.message);
       return true;
     }
-    return _borrowLocal.remove(id);
+    return _borrowStore().remove(id);
   }
 
   // ----------------------------------------------------------
@@ -299,6 +335,67 @@ const db = (() => {
       writtenOffDate: row.written_off_on  || null,
     };
   }
+
+  // ----------------------------------------------------------
+  // DEMO LOCAL STORES — used when _demoMode is true
+  // Author: Dylan Smith | 2026-05-28
+  // Same shape as the offline fallback stores below but with
+  // dedicated localStorage keys so demo data never collides
+  // with a real offline user's data.
+  // ----------------------------------------------------------
+  const _demoLocal = {
+    _key: 'loanlist_demo_v1',
+    _load()  { return JSON.parse(localStorage.getItem(this._key) || '[]'); },
+    _save(d) { localStorage.setItem(this._key, JSON.stringify(d)); },
+    _newId(items) { return items.length ? Math.max(...items.map(i => i.id)) + 1 : 1; },
+    getAll()  { return Promise.resolve(this._load()); },
+    insert(loan) {
+      const items  = this._load();
+      const record = { ...loan, id: this._newId(items) };
+      items.unshift(record);
+      this._save(items);
+      return Promise.resolve(record);
+    },
+    update(id, changes) {
+      const items = this._load();
+      const idx = items.findIndex(i => i.id === id);
+      if (idx === -1) return Promise.reject(new Error('Not found'));
+      items[idx] = { ...items[idx], ...changes };
+      this._save(items);
+      return Promise.resolve(items[idx]);
+    },
+    remove(id) {
+      this._save(this._load().filter(i => i.id !== id));
+      return Promise.resolve(true);
+    },
+  };
+
+  const _demoBorrowLocal = {
+    _key: 'loanlist_demo_borrows_v1',
+    _load()  { return JSON.parse(localStorage.getItem(this._key) || '[]'); },
+    _save(d) { localStorage.setItem(this._key, JSON.stringify(d)); },
+    _newId(items) { return items.length ? Math.max(...items.map(i => i.id)) + 1 : 1; },
+    getAll()  { return Promise.resolve(this._load()); },
+    insert(borrow) {
+      const items  = this._load();
+      const record = { ...borrow, id: this._newId(items) };
+      items.unshift(record);
+      this._save(items);
+      return Promise.resolve(record);
+    },
+    update(id, changes) {
+      const items = this._load();
+      const idx = items.findIndex(i => i.id === id);
+      if (idx === -1) return Promise.reject(new Error('Not found'));
+      items[idx] = { ...items[idx], ...changes };
+      this._save(items);
+      return Promise.resolve(items[idx]);
+    },
+    remove(id) {
+      this._save(this._load().filter(i => i.id !== id));
+      return Promise.resolve(true);
+    },
+  };
 
   // ----------------------------------------------------------
   // LOCAL STORAGE FALLBACK — BORROWS
@@ -379,7 +476,8 @@ const db = (() => {
   // Author: Dylan Smith | 2026-03-04
   // ----------------------------------------------------------
   return {
-    init, isCloud, auth,
+    init, isCloud, isConnected, isDemoMode, auth,
+    startDemo, endDemo, getDemoData,
     getAll, insert, update, remove,
     getCategories, getWriteoffReasons,
     borrows: { getAll: borrowGetAll, insert: borrowInsert, update: borrowUpdate, remove: borrowRemove },

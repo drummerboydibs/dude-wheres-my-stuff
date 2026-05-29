@@ -15,26 +15,24 @@
 // CONFIG
 // Author: Dylan Smith | 2026-03-04
 // ============================================================
-const CONFIG_URL_KEY = 'loanlist_supabase_url';
-const CONFIG_KEY_KEY = 'loanlist_supabase_key';
+// Supabase URL + publishable key are baked into config.js and
+// loaded at page load. The anon key is browser-safe by design;
+// RLS policies on each table are what protect user data.
+
+// Set when the user opts to sign up from inside the demo. Persists
+// across page loads so we can offer to migrate their demo items
+// after they confirm their email and sign in for the first time.
+const PENDING_MIGRATION_KEY = 'loanlist_pending_demo_migration';
+
+// True while the user is exploring with seeded sample data and no
+// real Supabase session.
+let demoMode = false;
 
 function getConfig() {
   return {
-    url: window.LOAN_LIST_SUPABASE_URL || localStorage.getItem(CONFIG_URL_KEY) || '',
-    key: window.LOAN_LIST_SUPABASE_KEY || localStorage.getItem(CONFIG_KEY_KEY) || '',
+    url: window.LOAN_LIST_SUPABASE_URL || '',
+    key: window.LOAN_LIST_SUPABASE_KEY || '',
   };
-}
-
-async function saveConfig() {
-  const url = document.getElementById('cfgUrl').value.trim();
-  const key = document.getElementById('cfgKey').value.trim();
-  if (!url || !key) {
-    showMsg('configMessage', 'Please enter both fields.', 'error');
-    return;
-  }
-  localStorage.setItem(CONFIG_URL_KEY, url);
-  localStorage.setItem(CONFIG_KEY_KEY, key);
-  await initSupabase(url, key);
 }
 
 // ============================================================
@@ -59,28 +57,19 @@ function showLanding() {
   clearMsg('authMessage');
 }
 
-// Show the auth card with the form section visible on the given tab.
-// Called from the landing's CTA buttons.
+// Show the auth card with the form on the given tab. Called from
+// the landing's CTA buttons. If Supabase didn't connect (a network
+// blip or a misconfigured fork), bail out with a friendly notice
+// rather than dropping the user on an unusable form.
 function showAuthForm(tab) {
+  if (!db.isConnected()) {
+    alert("Couldn't reach the server right now. Try again in a moment, or use the demo to explore the app.");
+    return;
+  }
   document.getElementById('landingCard').style.display = 'none';
   document.getElementById('authCard').style.display    = '';
-  document.getElementById('authConfigSection').style.display = 'none';
-  document.getElementById('authFormSection').style.display   = '';
-  document.getElementById('backToLandingBtn').parentElement.style.display = '';
   switchTab(tab || 'signin');
   setTimeout(() => document.getElementById('authEmail').focus(), 50);
-}
-
-// Show the auth card with the Supabase config section visible.
-// Used when no project credentials are available yet. The back-to-
-// landing button is hidden here because clicking a landing CTA
-// would just bounce the user right back to this screen.
-function showAuthConfig() {
-  document.getElementById('landingCard').style.display = 'none';
-  document.getElementById('authCard').style.display    = '';
-  document.getElementById('authConfigSection').style.display = '';
-  document.getElementById('authFormSection').style.display   = 'none';
-  document.getElementById('backToLandingBtn').parentElement.style.display = 'none';
 }
 
 function showMsg(id, text, type = 'error') {
@@ -126,17 +115,30 @@ async function handleAuthSubmit() {
   }
 }
 
-function showApp(session) {
+async function showApp(session) {
+  // A real Supabase session always wins over demo mode (the user
+  // signed in or up since startDemo() ran).
+  const isRealSession = session.user.email !== 'Demo Visitor';
+  if (isRealSession && demoMode) demoMode = false;
+
   document.getElementById('authGate').classList.add('auth-gate--hidden');
   document.getElementById('mainApp').style.display = '';
   document.getElementById('userEmail').textContent = session.user.email;
+  document.getElementById('demoBanner').style.display = demoMode ? '' : 'none';
   _syncThemeButtons(localStorage.getItem(THEME_KEY) || 'system');
-  loadData();
+  await loadData();
+
+  // If the user came to this real account via "Sign up to save your
+  // data" inside the demo, offer to bring the seeded items along.
+  if (isRealSession && localStorage.getItem(PENDING_MIGRATION_KEY) === 'true') {
+    await maybeMigrateDemoData();
+  }
 }
 
 function showAuthGate() {
   document.getElementById('authGate').classList.remove('auth-gate--hidden');
   document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('demoBanner').style.display = 'none';
   // Default to the landing splash when the gate (re)appears.
   showLanding();
   loans = [];
@@ -146,9 +148,91 @@ function showAuthGate() {
 }
 
 async function signOut() {
+  // Demo mode has no real Supabase session — just tear down the
+  // seeded data and bounce back to the landing.
+  if (demoMode) {
+    db.endDemo();
+    demoMode = false;
+    showAuthGate();
+    return;
+  }
   try {
     await db.auth.signOut();
   } catch (e) { /* onAuthStateChange fires regardless */ }
+}
+
+// ============================================================
+// DEMO MODE
+// Author: Dylan Smith | 2026-05-28
+// ============================================================
+
+// Entry point from the landing's "Try a demo" button. Seeds the
+// demo store, fakes a session, and drops the visitor into the
+// main app so they can play with the seeded items.
+function startDemo() {
+  // Clear any stale pending-migration flag from a previous aborted
+  // demo so the fresh demo starts clean.
+  localStorage.removeItem(PENDING_MIGRATION_KEY);
+  db.startDemo(window.buildDemoSeed());
+  demoMode = true;
+  showApp({ user: { email: 'Demo Visitor' } });
+}
+
+// Triggered by the banner's "Sign up to save your data" CTA.
+// Keeps demoMode true and the demo data intact so migration can
+// happen after the new account is verified and signed in.
+function signUpFromDemo() {
+  localStorage.setItem(PENDING_MIGRATION_KEY, 'true');
+  document.getElementById('authGate').classList.remove('auth-gate--hidden');
+  document.getElementById('mainApp').style.display = 'none';
+  showAuthForm('signup');
+}
+
+// Runs once, the first time a real session reaches showApp() after
+// the user opted to sign up from the demo. Snapshots the demo
+// store, asks the user whether to keep the items, and either
+// re-inserts them through the cloud path or discards them.
+async function maybeMigrateDemoData() {
+  const snapshot = await db.getDemoData();
+  const total = snapshot.loans.length + snapshot.borrows.length;
+
+  // No demo data left to migrate — just clear the flag and exit.
+  if (total === 0) {
+    db.endDemo();
+    localStorage.removeItem(PENDING_MIGRATION_KEY);
+    return;
+  }
+
+  const keep = window.confirm(
+    `Bring your ${total} demo item${total === 1 ? '' : 's'} into your new account?\n\n` +
+    `OK — keep them\nCancel — start fresh`
+  );
+
+  // Either path ends with the demo store cleared and the flag
+  // removed so we never prompt twice.
+  db.endDemo();
+  localStorage.removeItem(PENDING_MIGRATION_KEY);
+
+  if (!keep) return;
+
+  // Re-insert each demo item via the cloud path. db.endDemo()
+  // already flipped _demoMode off, so db.insert / db.borrows.insert
+  // now route to Supabase.
+  try {
+    for (const loan of snapshot.loans) {
+      // Strip the demo store's local id so the DB assigns a fresh one.
+      const { id: _id, ...payload } = loan;
+      await db.insert(payload);
+    }
+    for (const borrow of snapshot.borrows) {
+      const { id: _id, ...payload } = borrow;
+      await db.borrows.insert(payload);
+    }
+    await loadData();
+  } catch (err) {
+    console.error('Demo migration failed:', err);
+    alert(`Couldn't bring all demo items across: ${err.message}`);
+  }
 }
 
 // ============================================================
@@ -173,8 +257,9 @@ async function initSupabase(url, key) {
     }
 
   } catch (err) {
-    showAuthConfig();
-    showMsg('configMessage', `Could not connect: ${err.message}`, 'error');
+    // Connection failed — stay on the landing so the demo button
+    // still works, and surface the error in the console for devs.
+    console.error('Supabase init failed:', err);
   }
 }
 
@@ -852,7 +937,6 @@ document.addEventListener('keydown', e => {
     if (document.activeElement.closest('#loanForm'))   addLoan();
     if (document.activeElement.closest('#borrowForm')) addBorrow();
     if (document.activeElement.closest('.auth-form'))  handleAuthSubmit();
-    if (['cfgUrl','cfgKey'].includes(document.activeElement.id)) saveConfig();
   }
   if (e.key === 'Escape') {
     closeModal(); closeWriteoffModal(); closeDeleteModal(); closeSettings();
@@ -879,16 +963,14 @@ document.getElementById('deleteOverlay').addEventListener('click', e => {
 document.getElementById('fDate').value       = new Date().toISOString().split('T')[0];
 document.getElementById('fBorrowDate').value = new Date().toISOString().split('T')[0];
 
-// Auto-init from baked or saved credentials
+// Show the landing splash immediately so the "Try a demo" CTA is
+// reachable even before Supabase is ready. Kick off Supabase init
+// in parallel; if it finds an existing session it'll flip to the
+// main app.
 (async () => {
+  showLanding();
   const { url, key } = getConfig();
   if (url && key) {
-    document.getElementById('cfgUrl').value = url;
-    document.getElementById('cfgKey').value = key;
     await initSupabase(url, key);
-  } else {
-    // No Supabase credentials — skip the landing splash and go
-    // straight to the one-time setup panel.
-    showAuthConfig();
   }
 })();
