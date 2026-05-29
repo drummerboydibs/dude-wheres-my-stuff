@@ -1,4 +1,4 @@
-const { escapeHtml, formatDate, daysSince, catPillClass, matchesSearch, isOverdue, resolveCategory } = require('../utils.js');
+const { escapeHtml, formatDate, daysSince, catPillClass, matchesSearch, isOverdue, resolveCategory, getInitials, sortActiveRecords } = require('../utils.js');
 
 describe('escapeHtml', () => {
   it('escapes ampersands', () => expect(escapeHtml('a & b')).toBe('a &amp; b'));
@@ -88,5 +88,103 @@ describe('resolveCategory', () => {
   });
   it('falls back to Other for undefined id', () => {
     expect(resolveCategory(undefined, cats)).toEqual({ name: 'Other', slug: 'other' });
+  });
+});
+
+describe('getInitials', () => {
+  it('returns a single letter for a one-word name', () => expect(getInitials('Marcus')).toBe('M'));
+  it('returns first letter of each word for a two-word name', () => expect(getInitials('Amelia Smith')).toBe('AS'));
+  it('includes every word, even middle initials', () => expect(getInitials('John X Jamrich')).toBe('JXJ'));
+  it('uppercases lowercase input', () => expect(getInitials('alice')).toBe('A'));
+  it('collapses extra whitespace', () => expect(getInitials('  John   Doe  ')).toBe('JD'));
+  it('returns empty string for empty input', () => expect(getInitials('')).toBe(''));
+  it('returns empty string for null', () => expect(getInitials(null)).toBe(''));
+  it('returns empty string for undefined', () => expect(getInitials(undefined)).toBe(''));
+});
+
+describe('sortActiveRecords', () => {
+  it('puts dated items before undated items', () => {
+    const input = [
+      { item: 'NoDue',  date: '2020-01-01', due: '' },
+      { item: 'WithDue',date: '2025-01-01', due: '2025-12-31' },
+    ];
+    const out = sortActiveRecords(input);
+    expect(out.map(r => r.item)).toEqual(['WithDue', 'NoDue']);
+  });
+
+  it('sorts dated items by due date ASC', () => {
+    const input = [
+      { item: 'Late',  date: '2025-01-01', due: '2025-12-31' },
+      { item: 'Early', date: '2025-01-01', due: '2025-03-15' },
+      { item: 'Mid',   date: '2025-01-01', due: '2025-06-01' },
+    ];
+    expect(sortActiveRecords(input).map(r => r.item)).toEqual(['Early', 'Mid', 'Late']);
+  });
+
+  it('uses loan date as secondary sort for dated items', () => {
+    const input = [
+      { item: 'NewerLoan', date: '2025-02-01', due: '2025-03-15' },
+      { item: 'OlderLoan', date: '2025-01-01', due: '2025-03-15' },
+    ];
+    expect(sortActiveRecords(input).map(r => r.item)).toEqual(['OlderLoan', 'NewerLoan']);
+  });
+
+  it('uses item name as tertiary sort for dated items', () => {
+    const input = [
+      { item: 'Zither', date: '2025-01-01', due: '2025-03-15' },
+      { item: 'Anvil',  date: '2025-01-01', due: '2025-03-15' },
+      { item: 'Banjo',  date: '2025-01-01', due: '2025-03-15' },
+    ];
+    expect(sortActiveRecords(input).map(r => r.item)).toEqual(['Anvil', 'Banjo', 'Zither']);
+  });
+
+  it('sorts item names case-insensitively', () => {
+    const input = [
+      { item: 'banjo',  date: '2025-01-01', due: '2025-03-15' },
+      { item: 'Apple',  date: '2025-01-01', due: '2025-03-15' },
+    ];
+    expect(sortActiveRecords(input).map(r => r.item)).toEqual(['Apple', 'banjo']);
+  });
+
+  it('sorts undated items by loan date ASC', () => {
+    const input = [
+      { item: 'Newer', date: '2025-08-15', due: '' },
+      { item: 'Older', date: '2024-05-01', due: '' },
+    ];
+    expect(sortActiveRecords(input).map(r => r.item)).toEqual(['Older', 'Newer']);
+  });
+
+  it('uses item name as secondary sort for undated items', () => {
+    const input = [
+      { item: 'Saw',    date: '2024-05-01', due: '' },
+      { item: 'Hammer', date: '2024-05-01', due: '' },
+    ];
+    expect(sortActiveRecords(input).map(r => r.item)).toEqual(['Hammer', 'Saw']);
+  });
+
+  it('treats null, undefined, and empty string as no due date', () => {
+    const input = [
+      { item: 'Dated',     date: '2025-01-01', due: '2025-06-01' },
+      { item: 'NullDue',   date: '2024-01-01', due: null },
+      { item: 'UndefDue',  date: '2024-01-02', due: undefined },
+      { item: 'EmptyDue',  date: '2024-01-03', due: '' },
+    ];
+    const out = sortActiveRecords(input);
+    expect(out[0].item).toBe('Dated');                 // dated first
+    expect(out.slice(1).map(r => r.item)).toEqual(['NullDue', 'UndefDue', 'EmptyDue']);
+  });
+
+  it('does not mutate the input array', () => {
+    const input = [
+      { item: 'B', date: '2025-01-01', due: '' },
+      { item: 'A', date: '2025-01-01', due: '' },
+    ];
+    const snapshot = [...input];
+    sortActiveRecords(input);
+    expect(input).toEqual(snapshot);
+  });
+
+  it('returns an empty array for empty input', () => {
+    expect(sortActiveRecords([])).toEqual([]);
   });
 });

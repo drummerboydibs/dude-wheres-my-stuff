@@ -941,6 +941,57 @@ body {
 .category-pill--media    { color: var(--color-cat-media);    background: #eef8f7; }
 .category-pill--other    { color: var(--color-cat-other);    background: #f3f4f6; }
 
+/* --- Form Toggle (collapse/expand the Add Loan/Borrow form) -- */
+/*
+ * A prominent dashed button shown in place of the form when the
+ * form is collapsed. Picks up --color-primary so it tints blue in
+ * loan mode and amber in borrow mode without any extra rules.
+ * When the form is open, the toggle dims and flips to a solid
+ * border so it reads as a secondary "close" affordance.
+ */
+.form-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  background: transparent;
+  border: var(--border-width-thick) dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  padding: var(--space-4) var(--space-6);
+  margin-bottom: var(--space-5);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 56px;
+}
+.form-toggle:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+.form-toggle:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+.form-toggle__icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: var(--weight-bold);
+}
+.form-toggle--open {
+  color: var(--color-muted);
+  border-style: solid;
+  background: var(--color-surface-raised);
+}
+.form-toggle--open:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-raised);
+  border-color: var(--color-border);
+}
+
 /* --- Returned Toggle -------------------------------------- */
 .returned-toggle {
   background: transparent;
