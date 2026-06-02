@@ -1,4 +1,4 @@
-const { escapeHtml, formatDate, daysSince, catPillClass, matchesSearch, isOverdue, resolveCategory, getInitials, sortActiveRecords } = require('../utils.js');
+const { escapeHtml, formatDate, daysSince, catPillClass, matchesSearch, isOverdue, resolveCategory, getInitials, sortActiveRecords, shouldShowAddForm } = require('../utils.js');
 
 describe('escapeHtml', () => {
   it('escapes ampersands', () => expect(escapeHtml('a & b')).toBe('a &amp; b'));
@@ -187,4 +187,13 @@ describe('sortActiveRecords', () => {
   it('returns an empty array for empty input', () => {
     expect(sortActiveRecords([])).toEqual([]);
   });
+});
+
+describe('shouldShowAddForm', () => {
+  it('returns true with no items',    () => expect(shouldShowAddForm(0)).toBe(true));
+  it('returns true at the threshold', () => expect(shouldShowAddForm(3)).toBe(true));
+  it('returns false just past it',    () => expect(shouldShowAddForm(4)).toBe(false));
+  it('returns false for many items',  () => expect(shouldShowAddForm(100)).toBe(false));
+  it('respects a custom threshold',   () => expect(shouldShowAddForm(5, 5)).toBe(true));
+  it('returns false above a custom threshold', () => expect(shouldShowAddForm(6, 5)).toBe(false));
 });
