@@ -639,6 +639,19 @@ body {
   border-color: var(--color-danger);
 }
 
+.btn--edit {
+  background: transparent;
+  color: var(--color-ink-soft);
+  border-color: var(--color-border);
+  padding: 8px var(--space-4);
+  font-size: var(--text-sm);
+}
+.btn--edit:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
 .btn--destructive {
   background: var(--color-danger);
   color: #fff;
@@ -1437,6 +1450,13 @@ body {
   box-shadow: var(--shadow-lg);
   transform: translateY(12px) scale(0.98);
   transition: transform var(--transition-normal);
+}
+/* Edit modal carries 6 fields, so it gets a wider footprint and
+   scrolls vertically on small viewports. */
+.modal--wide {
+  max-width: 520px;
+  max-height: calc(100vh - 2 * var(--space-6));
+  overflow-y: auto;
 }
 .overlay--open .modal {
   transform: translateY(0) scale(1);

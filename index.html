@@ -463,6 +463,58 @@
 </div>
 
 
+<!-- ── EDIT MODAL ────────────────────────────────────────────
+     Same modal for both modes; field labels are swapped to match
+     loan vs borrow by openEditModal(). Saves via db.update or
+     db.borrows.update.
+     ─────────────────────────────────────────────────────── -->
+<div class="overlay" id="editOverlay" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+  <div class="modal modal--wide">
+    <h3 class="modal__title" id="editModalTitle">Edit Loan</h3>
+    <div class="modal__field">
+      <div class="form-field">
+        <label class="form-field__label" for="editItem">Item Name</label>
+        <input class="form-field__input" type="text" id="editItem" />
+      </div>
+    </div>
+    <div class="modal__field">
+      <div class="form-field">
+        <label class="form-field__label" for="editPerson"><span id="editPersonLabel">Loaned To</span></label>
+        <input class="form-field__input" type="text" id="editPerson" />
+      </div>
+    </div>
+    <div class="modal__field">
+      <div class="form-field">
+        <label class="form-field__label" for="editCategory">Category</label>
+        <select class="form-field__select" id="editCategory"></select>
+      </div>
+    </div>
+    <div class="modal__field">
+      <div class="form-field">
+        <label class="form-field__label" for="editDate"><span id="editDateLabel">Date Loaned</span></label>
+        <input class="form-field__input" type="date" id="editDate" />
+      </div>
+    </div>
+    <div class="modal__field">
+      <div class="form-field">
+        <label class="form-field__label" for="editDue">Return By (optional)</label>
+        <input class="form-field__input" type="date" id="editDue" />
+      </div>
+    </div>
+    <div class="modal__field">
+      <div class="form-field">
+        <label class="form-field__label" for="editNotes">Notes (optional)</label>
+        <input class="form-field__input" type="text" id="editNotes" />
+      </div>
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn--cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn--confirm" onclick="confirmEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- FOOTER -->
 <footer class="site-footer">
   Built by Dylan Smith using <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
@@ -471,6 +523,6 @@
 <script src="config.js" onerror="this.remove()"></script>
 <script src="utils.js"></script>
 <script src="db.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

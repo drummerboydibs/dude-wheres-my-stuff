@@ -279,13 +279,17 @@ let pendingWriteoffMode = 'loan';
 let pendingDeleteId   = null;
 let pendingDeleteMode = 'loan';
 
+let pendingEditId   = null;
+let pendingEditMode = 'loan';
+
 let showReturned       = false;
 let showWrittenOff     = false;
 let showBorrowReturned = false;
 let showBorrowWrittenOff = false;
 
-// Add Loan / Add Borrow forms default collapsed — the list is the
-// primary view; the form expands only when the user wants to add.
+// Add Loan / Add Borrow forms: initial state is decided after data
+// loads (see loadData) — open for new/light users (≤3 items in that
+// mode), collapsed once the list grows past 3.
 let showLoanForm   = false;
 let showBorrowForm = false;
 
@@ -303,6 +307,12 @@ async function loadData() {
     ]);
     populateCategorySelects();
     populateWriteoffReasonSelect();
+    // Open the Add form by default while the list is still light
+    // (≤3 items), collapse it once the user is past the new-user
+    // phase. Runs only on initial load — the user can toggle freely
+    // after.
+    setLoanForm(loans.length     <= 3);
+    setBorrowForm(borrows.length <= 3);
     // Render inactive mode first, then active mode last so the
     // shared section header always reflects the current mode.
     if (currentMode === 'loan') { renderBorrows(); renderLoans(); }
@@ -401,29 +411,40 @@ function setBorrowFilter(f, btn) {
 // Author: Dylan Smith | 2026-03-04 / 2026-05-22 / 2026-05-23
 // ============================================================
 
+// Apply form-open state to the DOM without any focus side effects.
+// Used by both the user-driven toggle and the initial state set in
+// loadData (where stealing focus on app load would be jarring).
+function setLoanForm(open) {
+  showLoanForm = open;
+  const form   = document.getElementById('loanForm');
+  const toggle = document.getElementById('loanFormToggle');
+  form.style.display = open ? '' : 'none';
+  toggle.classList.toggle('form-toggle--open', open);
+  toggle.setAttribute('aria-expanded', open);
+  document.getElementById('loanFormToggleIcon').textContent  = open ? '−' : '+';
+  document.getElementById('loanFormToggleLabel').textContent = open ? 'Close Form' : 'Add a New Loan';
+}
+
+function setBorrowForm(open) {
+  showBorrowForm = open;
+  const form   = document.getElementById('borrowForm');
+  const toggle = document.getElementById('borrowFormToggle');
+  form.style.display = open ? '' : 'none';
+  toggle.classList.toggle('form-toggle--open', open);
+  toggle.setAttribute('aria-expanded', open);
+  document.getElementById('borrowFormToggleIcon').textContent  = open ? '−' : '+';
+  document.getElementById('borrowFormToggleLabel').textContent = open ? 'Close Form' : 'Add a New Borrow';
+}
+
 // Expand/collapse the "Add a New Loan" form. When opening, jump
 // focus to the first field so the user can start typing right away.
 function toggleLoanForm() {
-  showLoanForm = !showLoanForm;
-  const form   = document.getElementById('loanForm');
-  const toggle = document.getElementById('loanFormToggle');
-  form.style.display = showLoanForm ? '' : 'none';
-  toggle.classList.toggle('form-toggle--open', showLoanForm);
-  toggle.setAttribute('aria-expanded', showLoanForm);
-  document.getElementById('loanFormToggleIcon').textContent  = showLoanForm ? '−' : '+';
-  document.getElementById('loanFormToggleLabel').textContent = showLoanForm ? 'Close Form' : 'Add a New Loan';
+  setLoanForm(!showLoanForm);
   if (showLoanForm) setTimeout(() => document.getElementById('fItem').focus(), 50);
 }
 
 function toggleBorrowForm() {
-  showBorrowForm = !showBorrowForm;
-  const form   = document.getElementById('borrowForm');
-  const toggle = document.getElementById('borrowFormToggle');
-  form.style.display = showBorrowForm ? '' : 'none';
-  toggle.classList.toggle('form-toggle--open', showBorrowForm);
-  toggle.setAttribute('aria-expanded', showBorrowForm);
-  document.getElementById('borrowFormToggleIcon').textContent  = showBorrowForm ? '−' : '+';
-  document.getElementById('borrowFormToggleLabel').textContent = showBorrowForm ? 'Close Form' : 'Add a New Borrow';
+  setBorrowForm(!showBorrowForm);
   if (showBorrowForm) setTimeout(() => document.getElementById('fBorrowItem').focus(), 50);
 }
 
@@ -613,6 +634,79 @@ async function confirmDelete() {
 }
 
 // ============================================================
+// MODALS — EDIT
+// Author: Dylan Smith | 2026-06-02
+// Lets the user fix typos / wrong dates / wrong person on an
+// existing active loan or borrow. Returned/written-off cards
+// don't expose an Edit button — those flows have their own
+// dedicated modals (return / writeoff).
+// ============================================================
+function openEditModal(id, mode = 'loan') {
+  const arr    = mode === 'loan' ? loans : borrows;
+  const record = arr.find(r => r.id === id);
+  if (!record) return;
+  pendingEditId   = id;
+  pendingEditMode = mode;
+
+  document.getElementById('editModalTitle').textContent = mode === 'loan' ? 'Edit Loan' : 'Edit Borrow';
+  document.getElementById('editPersonLabel').textContent = mode === 'loan' ? 'Loaned To' : 'Borrowed From';
+  document.getElementById('editDateLabel').textContent   = mode === 'loan' ? 'Date Loaned' : 'Date Borrowed';
+
+  const catSelect = document.getElementById('editCategory');
+  catSelect.innerHTML = categories
+    .map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`)
+    .join('');
+  catSelect.value = record.categoryId;
+
+  document.getElementById('editItem').value   = record.item   || '';
+  document.getElementById('editPerson').value = record.person || '';
+  document.getElementById('editDate').value   = record.date   || '';
+  document.getElementById('editDue').value    = record.due    || '';
+  document.getElementById('editNotes').value  = record.notes  || '';
+
+  document.getElementById('editOverlay').classList.add('overlay--open');
+  setTimeout(() => document.getElementById('editItem').focus(), 50);
+}
+
+function closeEditModal() {
+  document.getElementById('editOverlay').classList.remove('overlay--open');
+  pendingEditId = null;
+}
+
+async function confirmEdit() {
+  if (pendingEditId == null) return;
+
+  const itemEl   = document.getElementById('editItem');
+  const personEl = document.getElementById('editPerson');
+  const dateEl   = document.getElementById('editDate');
+
+  const item       = itemEl.value.trim();
+  const person     = personEl.value.trim();
+  const date       = dateEl.value;
+  const due        = document.getElementById('editDue').value;
+  const categoryId = parseInt(document.getElementById('editCategory').value, 10);
+  const notes      = document.getElementById('editNotes').value.trim();
+
+  const errors = [!item && itemEl, !person && personEl, !date && dateEl].filter(Boolean);
+  if (errors.length) { errors.forEach(flashError); return; }
+
+  const changes   = { item, person, date, due, categoryId, notes };
+  const db_update = pendingEditMode === 'loan' ? db.update : db.borrows.update;
+  const arr       = pendingEditMode === 'loan' ? loans : borrows;
+
+  try {
+    await db_update(pendingEditId, changes);
+    const idx = arr.findIndex(r => r.id === pendingEditId);
+    if (idx !== -1) arr[idx] = { ...arr[idx], ...changes };
+    closeEditModal();
+    if (pendingEditMode === 'loan') renderLoans();
+    else                            renderBorrows();
+  } catch (err) {
+    alert(`Couldn't save: ${err.message}`);
+  }
+}
+
+// ============================================================
 // RENDER — shared card builder
 // Author: Dylan Smith | 2026-03-04 / 2026-05-22
 // ============================================================
@@ -647,7 +741,8 @@ function buildCard(record, overdue, mode = 'loan') {
     actions = `<span class="loan-card__returned-badge">&#10003; back ${formatDate(record.returnedDate)}</span>
                <button class="btn btn--icon" title="Delete record" onclick="openDeleteModal(${record.id}, '${mode}')">&times;</button>`;
   } else {
-    actions = `<button class="btn btn--positive" onclick="openModal(${record.id}, '${mode}')">Mark Returned</button>
+    actions = `<button class="btn btn--edit" onclick="openEditModal(${record.id}, '${mode}')">Edit</button>
+               <button class="btn btn--positive" onclick="openModal(${record.id}, '${mode}')">Mark Returned</button>
                <button class="btn btn--danger-ghost" onclick="openWriteoffModal(${record.id}, '${mode}')">Write Off</button>
                <button class="btn btn--icon" title="Remove" onclick="openDeleteModal(${record.id}, '${mode}')">&times;</button>`;
   }
@@ -855,7 +950,7 @@ document.addEventListener('keydown', e => {
     if (['cfgUrl','cfgKey'].includes(document.activeElement.id)) saveConfig();
   }
   if (e.key === 'Escape') {
-    closeModal(); closeWriteoffModal(); closeDeleteModal(); closeSettings();
+    closeModal(); closeWriteoffModal(); closeDeleteModal(); closeEditModal(); closeSettings();
   }
 });
 
@@ -873,6 +968,9 @@ document.getElementById('writeoffOverlay').addEventListener('click', e => {
 });
 document.getElementById('deleteOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('deleteOverlay')) closeDeleteModal();
+});
+document.getElementById('editOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('editOverlay')) closeEditModal();
 });
 
 // Default form dates to today
