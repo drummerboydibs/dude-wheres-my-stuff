@@ -77,4 +77,17 @@ function sortActiveRecords(records) {
   });
 }
 
-if (typeof module !== 'undefined') module.exports = { escapeHtml, formatDate, daysSince, catPillClass, matchesSearch, isOverdue, resolveCategory, getInitials, sortActiveRecords };
+/**
+ * shouldShowAddForm — should the "Add a New Loan/Borrow" form
+ * default to open for a user with `itemCount` items in that mode?
+ *
+ * Open while the list is still light (≤ threshold), collapse once
+ * the user is past the new-user phase. Threshold defaults to 3
+ * (so the form stays open for the first 3 entries and collapses
+ * on the 4th visit).
+ */
+function shouldShowAddForm(itemCount, threshold = 3) {
+  return itemCount <= threshold;
+}
+
+if (typeof module !== 'undefined') module.exports = { escapeHtml, formatDate, daysSince, catPillClass, matchesSearch, isOverdue, resolveCategory, getInitials, sortActiveRecords, shouldShowAddForm };

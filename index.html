@@ -22,7 +22,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="stylesheet" href="styles.css?v=10" />
 </head>
 <body>
 
@@ -511,6 +511,9 @@
       <button class="btn btn--cancel" onclick="closeEditModal()">Cancel</button>
       <button class="btn btn--confirm" onclick="confirmEdit()">Save Changes</button>
     </div>
+    <div class="modal__actions modal__actions--secondary">
+      <button class="btn btn--danger-ghost" id="editDeleteBtn" onclick="deleteFromEditModal()">Delete this loan</button>
+    </div>
   </div>
 </div>
 
@@ -523,6 +526,6 @@
 <script src="config.js" onerror="this.remove()"></script>
 <script src="utils.js"></script>
 <script src="db.js"></script>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

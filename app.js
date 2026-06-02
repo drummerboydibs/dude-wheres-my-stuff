@@ -308,11 +308,11 @@ async function loadData() {
     populateCategorySelects();
     populateWriteoffReasonSelect();
     // Open the Add form by default while the list is still light
-    // (≤3 items), collapse it once the user is past the new-user
-    // phase. Runs only on initial load — the user can toggle freely
-    // after.
-    setLoanForm(loans.length     <= 3);
-    setBorrowForm(borrows.length <= 3);
+    // (see shouldShowAddForm), collapse it once the user is past
+    // the new-user phase. Runs only on initial load — the user can
+    // toggle freely after.
+    setLoanForm(shouldShowAddForm(loans.length));
+    setBorrowForm(shouldShowAddForm(borrows.length));
     // Render inactive mode first, then active mode last so the
     // shared section header always reflects the current mode.
     if (currentMode === 'loan') { renderBorrows(); renderLoans(); }
@@ -651,6 +651,7 @@ function openEditModal(id, mode = 'loan') {
   document.getElementById('editModalTitle').textContent = mode === 'loan' ? 'Edit Loan' : 'Edit Borrow';
   document.getElementById('editPersonLabel').textContent = mode === 'loan' ? 'Loaned To' : 'Borrowed From';
   document.getElementById('editDateLabel').textContent   = mode === 'loan' ? 'Date Loaned' : 'Date Borrowed';
+  document.getElementById('editDeleteBtn').textContent   = mode === 'loan' ? 'Delete this loan' : 'Delete this borrow';
 
   const catSelect = document.getElementById('editCategory');
   catSelect.innerHTML = categories
@@ -671,6 +672,18 @@ function openEditModal(id, mode = 'loan') {
 function closeEditModal() {
   document.getElementById('editOverlay').classList.remove('overlay--open');
   pendingEditId = null;
+}
+
+// Bridge from Edit → Delete. We close the edit modal and hand off
+// to the existing delete-confirmation modal so the user always sees
+// the "This can't be undone" gate before anything is actually
+// removed.
+function deleteFromEditModal() {
+  const id   = pendingEditId;
+  const mode = pendingEditMode;
+  if (id == null) return;
+  closeEditModal();
+  openDeleteModal(id, mode);
 }
 
 async function confirmEdit() {
@@ -733,18 +746,23 @@ function buildCard(record, overdue, mode = 'loan') {
     ? `<span class="loan-card__meta-piece"><span class="loan-card__dot"></span> ${escapeHtml(record.notes)}</span>`
     : '';
 
+  // Every card carries an Edit button — that's the single entry
+  // point for changing fields OR deleting. The per-card delete
+  // affordance was removed; Delete now lives inside the Edit
+  // modal (gated by the same confirmation dialog as before).
+  const editBtn = `<button class="btn btn--edit" onclick="openEditModal(${record.id}, '${mode}')">Edit</button>`;
+
   let actions;
   if (record.writtenOff) {
     actions = `<span class="loan-card__writeoff-badge">&#10005; ${escapeHtml(record.writeoffReason)} &middot; ${formatDate(record.writtenOffDate)}</span>
-               <button class="btn btn--icon" title="Delete record" onclick="openDeleteModal(${record.id}, '${mode}')">&times;</button>`;
+               ${editBtn}`;
   } else if (record.returned) {
     actions = `<span class="loan-card__returned-badge">&#10003; back ${formatDate(record.returnedDate)}</span>
-               <button class="btn btn--icon" title="Delete record" onclick="openDeleteModal(${record.id}, '${mode}')">&times;</button>`;
+               ${editBtn}`;
   } else {
-    actions = `<button class="btn btn--edit" onclick="openEditModal(${record.id}, '${mode}')">Edit</button>
+    actions = `${editBtn}
                <button class="btn btn--positive" onclick="openModal(${record.id}, '${mode}')">Mark Returned</button>
-               <button class="btn btn--danger-ghost" onclick="openWriteoffModal(${record.id}, '${mode}')">Write Off</button>
-               <button class="btn btn--icon" title="Remove" onclick="openDeleteModal(${record.id}, '${mode}')">&times;</button>`;
+               <button class="btn btn--danger-ghost" onclick="openWriteoffModal(${record.id}, '${mode}')">Write Off</button>`;
   }
 
   return `<div class="loan-card ${modifiers}">
