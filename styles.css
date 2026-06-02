@@ -803,6 +803,13 @@ body {
   align-items: center;
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+/* Slide-in plays only for cards seen for the first time this session
+   (see _seenCardIds in app.js). Without this, every search keystroke and
+   filter toggle rebuilt the list innerHTML and re-ran the animation on
+   every card, making the whole list flicker. */
+.loan-card--enter {
   animation: slideIn 0.22s ease;
 }
 
@@ -1025,45 +1032,6 @@ body {
 .returned-toggle:hover { color: var(--color-ink); }
 .returned-toggle:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
 
-/* --- Connection / Status Banner --------------------------- */
-.status-banner {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-5);
-  border: var(--border-width) solid transparent;
-}
-
-.status-banner--local {
-  background: var(--color-warning-light);
-  border-color: #f0c060;
-  color: var(--color-warning);
-}
-.status-banner--connected {
-  background: var(--color-positive-light);
-  border-color: #6fcf97;
-  color: var(--color-positive);
-}
-.status-banner--error {
-  background: var(--color-danger-light);
-  border-color: #f4a9a3;
-  color: var(--color-danger);
-}
-
-.status-banner__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.status-banner--local .status-banner__dot     { background: var(--color-warning); }
-.status-banner--connected .status-banner__dot { background: var(--color-positive); }
-.status-banner--error .status-banner__dot     { background: var(--color-danger); }
-
 /* --- Auth Gate -------------------------------------------- */
 .auth-gate {
   position: fixed;
@@ -1169,52 +1137,6 @@ body {
 .auth-message--visible  { display: block; }
 .auth-message--error    { background: var(--color-danger-light);  border-color: #f4a9a3; color: var(--color-danger); }
 .auth-message--success  { background: var(--color-positive-light); border-color: #6fcf97; color: var(--color-positive); }
-
-/* --- Auth Bar (removed — controls now live in .site-header__auth) --- */
-.auth-bar {
-  display: none;
-  gap: var(--space-3);
-  margin-bottom: var(--space-6);
-  padding: var(--space-3) var(--space-5);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.auth-bar__user {
-  font-size: var(--text-sm);
-  color: var(--color-muted);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.auth-bar__user strong {
-  color: var(--color-ink);
-  font-weight: var(--weight-semibold);
-}
-
-.auth-bar__signout {
-  background: transparent;
-  border: var(--border-width-thick) solid var(--color-border);
-  font-family: var(--font-body);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--color-muted);
-  padding: 6px var(--space-4);
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  min-height: 36px;
-}
-.auth-bar__signout:hover {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-  background: var(--color-danger-light);
-}
-.auth-bar__signout:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
 /* --- Config Panel ----------------------------------------- */
 .config-panel {

@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Content-Security-Policy: whitelists where scripts, styles, fonts and
+       network requests may originate. Placed first so it governs every later
+       resource (including the gtag script below).
+       Notes:
+         • 'unsafe-inline' on script-src is currently required because the UI
+           wires actions through inline onclick handlers; tightening it is
+           gated on moving those to addEventListener.
+         • frame-ancestors / X-Frame-Options are header-only and can't be set
+           via <meta> on GitHub Pages, so clickjacking protection isn't here.
+         • *.supabase.co covers hosted projects. A self-hosted Supabase on a
+           custom domain would need its origin added to connect-src. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com; object-src 'none'; base-uri 'self'; form-action 'self'" />
+
   <!-- Google tag (gtag.js) — placed immediately after <head> per
        Google's official guidance so the tag fires as early as
        possible: https://developers.google.com/tag-platform/gtagjs -->
@@ -47,8 +60,8 @@
       Keep track of what you've
       <span class="rotator" aria-label="lent or borrowed">
         <span class="rotator__spacer" aria-hidden="true">borrowed</span>
-        <span class="rotator__word rotator__word--lent">lent</span>
-        <span class="rotator__word rotator__word--borrowed">borrowed</span>
+        <span class="rotator__word rotator__word--lent" aria-hidden="true">lent</span>
+        <span class="rotator__word rotator__word--borrowed" aria-hidden="true">borrowed</span>
       </span>
     </h1>
 
@@ -104,16 +117,16 @@
           project URL and anon key. See <code>README.md</code> for the full setup guide.
         </p>
         <div class="form-field u-mb-3">
-          <label class="form-field__label">Project URL</label>
+          <label class="form-field__label" for="cfgUrl">Project URL</label>
           <input class="form-field__input" type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co" />
         </div>
         <div class="form-field u-mb-4">
-          <label class="form-field__label">Anon Key</label>
+          <label class="form-field__label" for="cfgKey">Anon Key</label>
           <input class="form-field__input" type="password" id="cfgKey" placeholder="eyJh..." />
         </div>
         <button class="btn btn--primary" onclick="saveConfig()">Save &amp; Continue</button>
       </div>
-      <div class="auth-message" id="configMessage"></div>
+      <div class="auth-message" id="configMessage" role="alert"></div>
     </div>
 
     <!-- Login / Signup tabs (shown once Supabase is configured) -->
@@ -123,15 +136,15 @@
         <button class="auth-tab" id="tabSignUp" onclick="switchTab('signup')">Create Account</button>
       </div>
 
-      <div class="auth-message" id="authMessage"></div>
+      <div class="auth-message" id="authMessage" role="alert"></div>
 
       <div class="auth-form">
         <div class="form-field">
-          <label class="form-field__label">Email</label>
+          <label class="form-field__label" for="authEmail">Email</label>
           <input class="form-field__input" type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" />
         </div>
         <div class="form-field">
-          <label class="form-field__label">Password</label>
+          <label class="form-field__label" for="authPassword">Password</label>
           <input class="form-field__input" type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" />
         </div>
         <button class="btn btn--primary auth-form__submit" id="authSubmitBtn" onclick="handleAuthSubmit()">
@@ -155,7 +168,7 @@
   <!-- HEADER -->
   <header class="site-header">
     <div class="site-header__brand">
-      <div class="site-header__logo">Dude, where's my <span class="site-header__logo-accent">stuff?</span></div>
+      <h1 class="site-header__logo">Dude, where's my <span class="site-header__logo-accent">stuff?</span></h1>
       <div class="site-header__tagline">
         <span data-loan-only>Keep track of what you've lent</span>
         <span data-borrow-only>Keep track of what you've borrowed</span>
@@ -164,13 +177,13 @@
     <div class="site-header__auth">
       <span class="site-header__user">Signed in as <strong id="userEmail">—</strong></span>
       <div class="settings-popover-wrap" id="settingsWrap">
-        <button class="site-header__settings" id="settingsBtn" onclick="toggleSettings()" title="Settings" aria-haspopup="true" aria-expanded="false">
+        <button class="site-header__settings" id="settingsBtn" onclick="toggleSettings()" title="Settings" aria-label="Settings" aria-haspopup="true" aria-expanded="false">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
-        <div class="settings-popover" id="settingsPopover" role="menu">
+        <div class="settings-popover" id="settingsPopover">
           <span class="settings-popover__label">Theme</span>
           <div class="theme-toggle">
             <button class="theme-toggle__btn" id="themeLight" onclick="setTheme('light')">☀️ Light</button>
@@ -185,14 +198,14 @@
   </header>
 
   <!-- ── MODE TABS ─────────────────────────────────────────── -->
-  <nav class="mode-tabs" role="tablist" aria-label="Switch between Loans and Borrows">
+  <nav class="mode-tabs" aria-label="Switch between Loans and Borrows">
     <button class="mode-tab mode-tab--active" id="modeTabLoan"
-            role="tab" aria-selected="true" onclick="setMode('loan')">
+            type="button" aria-pressed="true" onclick="setMode('loan')">
       📤 My Loans
       <span class="mode-tab__badge" id="modeTabLoanBadge">0 out</span>
     </button>
     <button class="mode-tab" id="modeTabBorrow"
-            role="tab" aria-selected="false" onclick="setMode('borrow')">
+            type="button" aria-pressed="false" onclick="setMode('borrow')">
       📥 My Borrows
       <span class="mode-tab__badge" id="modeTabBorrowBadge">0 out</span>
     </button>
@@ -245,30 +258,30 @@
     <span class="loan-form__label-tag">New Loan</span>
     <div class="u-grid-3 u-mb-4">
       <div class="form-field">
-        <label class="form-field__label">Item Name</label>
+        <label class="form-field__label" for="fItem">Item Name</label>
         <input class="form-field__input" type="text" id="fItem" placeholder="e.g. Circular Saw" />
       </div>
       <div class="form-field">
-        <label class="form-field__label">Loaned To</label>
+        <label class="form-field__label" for="fPerson">Loaned To</label>
         <input class="form-field__input" type="text" id="fPerson" placeholder="e.g. Marcus" />
       </div>
       <div class="form-field">
-        <label class="form-field__label">Category</label>
+        <label class="form-field__label" for="fCategory">Category</label>
         <select class="form-field__select" id="fCategory"></select>
       </div>
     </div>
     <div class="u-grid-2 u-mb-4">
       <div class="form-field">
-        <label class="form-field__label">Date Loaned</label>
+        <label class="form-field__label" for="fDate">Date Loaned</label>
         <input class="form-field__input" type="date" id="fDate" />
       </div>
       <div class="form-field">
-        <label class="form-field__label">Return By (optional)</label>
+        <label class="form-field__label" for="fDue">Return By (optional)</label>
         <input class="form-field__input" type="date" id="fDue" />
       </div>
     </div>
     <div class="form-field u-mb-4">
-      <label class="form-field__label">Notes (optional)</label>
+      <label class="form-field__label" for="fNotes">Notes (optional)</label>
       <input class="form-field__input" type="text" id="fNotes" placeholder="Any details..." />
     </div>
     <button class="btn btn--primary" onclick="addLoan()">+ Add Loan</button>
@@ -285,30 +298,30 @@
     <span class="loan-form__label-tag">New Borrow</span>
     <div class="u-grid-3 u-mb-4">
       <div class="form-field">
-        <label class="form-field__label">Item Name</label>
+        <label class="form-field__label" for="fBorrowItem">Item Name</label>
         <input class="form-field__input" type="text" id="fBorrowItem" placeholder="e.g. Pressure Washer" />
       </div>
       <div class="form-field">
-        <label class="form-field__label">Borrowed From</label>
+        <label class="form-field__label" for="fBorrowPerson">Borrowed From</label>
         <input class="form-field__input" type="text" id="fBorrowPerson" placeholder="e.g. Dave" />
       </div>
       <div class="form-field">
-        <label class="form-field__label">Category</label>
+        <label class="form-field__label" for="fBorrowCategory">Category</label>
         <select class="form-field__select" id="fBorrowCategory"></select>
       </div>
     </div>
     <div class="u-grid-2 u-mb-4">
       <div class="form-field">
-        <label class="form-field__label">Date Borrowed</label>
+        <label class="form-field__label" for="fBorrowDate">Date Borrowed</label>
         <input class="form-field__input" type="date" id="fBorrowDate" />
       </div>
       <div class="form-field">
-        <label class="form-field__label">Return By (optional)</label>
+        <label class="form-field__label" for="fBorrowDue">Return By (optional)</label>
         <input class="form-field__input" type="date" id="fBorrowDue" />
       </div>
     </div>
     <div class="form-field u-mb-4">
-      <label class="form-field__label">Notes (optional)</label>
+      <label class="form-field__label" for="fBorrowNotes">Notes (optional)</label>
       <input class="form-field__input" type="text" id="fBorrowNotes" placeholder="Any details..." />
     </div>
     <button class="btn btn--primary" onclick="addBorrow()">+ Add Borrow</button>
@@ -339,8 +352,11 @@
   </div>
 
   <!-- ── ACTIVE SECTION HEADER (shared; updated by each render fn) ── -->
-  <div class="section-header">
-    <span class="section-header__title" id="listTitle">Out on Loan</span>
+  <!-- aria-live: title + count are rewritten on every filter/search/mode
+       change, so a polite region announces e.g. "Out on Loan 3" without
+       reading out the whole list (the list itself is intentionally not live). -->
+  <div class="section-header" aria-live="polite">
+    <h2 class="section-header__title" id="listTitle">Out on Loan</h2>
     <span class="section-header__badge" id="listCount">0</span>
   </div>
 

@@ -230,9 +230,9 @@ function setMode(mode) {
   document.body.classList.toggle('borrow-mode', mode === 'borrow');
 
   document.getElementById('modeTabLoan').classList.toggle('mode-tab--active', mode === 'loan');
-  document.getElementById('modeTabLoan').setAttribute('aria-selected', mode === 'loan');
+  document.getElementById('modeTabLoan').setAttribute('aria-pressed', mode === 'loan');
   document.getElementById('modeTabBorrow').classList.toggle('mode-tab--active', mode === 'borrow');
-  document.getElementById('modeTabBorrow').setAttribute('aria-selected', mode === 'borrow');
+  document.getElementById('modeTabBorrow').setAttribute('aria-pressed', mode === 'borrow');
 
   // Clear search when switching to avoid cross-mode confusion
   if (mode === 'loan') {
@@ -256,6 +256,54 @@ function setMode(mode) {
 function flashError(el) {
   el.classList.add('form-field__input--error');
   setTimeout(() => el.classList.remove('form-field__input--error'), 1400);
+}
+
+// ============================================================
+// MODAL FOCUS MANAGEMENT (a11y)
+// Author: Dylan Smith | 2026-06-02
+// Shared by all four overlays. Open/close call _onModalOpen /
+// _onModalClose; the keydown handler uses _openOverlay/_focusable
+// to keep Tab inside the dialog. Together these satisfy the dialog
+// expectations of WCAG 2.4.3 (focus order) and 4.1.2.
+// ============================================================
+let _modalReturnFocus = null;
+
+// Visible, focusable descendants of a container, in DOM order.
+function _focusable(container) {
+  return [...container.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )].filter(el => el.offsetParent !== null);
+}
+
+// The overlay that's currently open, if any.
+function _openOverlay() {
+  return document.querySelector('.overlay--open');
+}
+
+// Make the main app inert (non-interactive AND hidden from screen
+// readers) while a modal is open. The overlays are siblings of
+// #mainApp in the DOM, so they stay live.
+function _setBackgroundInert(on) {
+  const main = document.getElementById('mainApp');
+  if (main) main.inert = on;
+}
+
+// Call when opening a modal, before moving focus into it: remembers
+// the trigger so we can restore focus, and locks the background.
+function _onModalOpen() {
+  _modalReturnFocus = document.activeElement;
+  _setBackgroundInert(true);
+}
+
+// Call when closing a modal: unlocks the background and returns
+// focus to whatever opened the dialog. Safe to call repeatedly
+// (Escape fires every close*()), since it no-ops once cleared.
+function _onModalClose() {
+  _setBackgroundInert(false);
+  if (_modalReturnFocus && typeof _modalReturnFocus.focus === 'function') {
+    _modalReturnFocus.focus();
+  }
+  _modalReturnFocus = null;
 }
 
 // ============================================================
@@ -293,6 +341,12 @@ let showBorrowWrittenOff = false;
 let showLoanForm   = false;
 let showBorrowForm = false;
 
+// Records already rendered this session, keyed by `${mode}${id}`. Used so the
+// slide-in animation fires only for newly added cards, not on every
+// search/filter re-render. Seeded from existing data in loadData so the
+// initial paint is calm. (loan#1 and borrow#1 are distinct keys.)
+const _seenCardIds = new Set();
+
 // ============================================================
 // DATA LOAD
 // Author: Dylan Smith | 2026-03-04 / 2026-05-22
@@ -305,6 +359,11 @@ async function loadData() {
       db.getCategories(),
       db.getWriteoffReasons(),
     ]);
+    // Existing records aren't "new" — mark them seen so they don't animate on
+    // first paint; only items added later this session will slide in.
+    _seenCardIds.clear();
+    loans.forEach(l => _seenCardIds.add('loan' + l.id));
+    borrows.forEach(b => _seenCardIds.add('borrow' + b.id));
     populateCategorySelects();
     populateWriteoffReasonSelect();
     // Open the Add form by default while the list is still light
@@ -482,9 +541,8 @@ function openModal(id, mode = 'loan') {
   pendingReturnId   = id;
   pendingReturnMode = mode;
 
-  document.getElementById('modalItem').textContent   = record.item;
-  document.getElementById('modalPerson').textContent = record.person;
-
+  // Title + body (incl. the #modalItem / #modalPerson spans) are set
+  // below via innerHTML, so there's no need to set their text first.
   if (mode === 'loan') {
     document.getElementById('modalTitle').textContent = 'Mark as Returned?';
     document.getElementById('modalBody').innerHTML =
@@ -499,6 +557,7 @@ function openModal(id, mode = 'loan') {
   const dateInput = document.getElementById('modalReturnDate');
   dateInput.value = today;
   dateInput.max   = today;
+  _onModalOpen();
   document.getElementById('overlay').classList.add('overlay--open');
   setTimeout(() => dateInput.focus(), 50);
 }
@@ -506,6 +565,7 @@ function openModal(id, mode = 'loan') {
 function closeModal() {
   document.getElementById('overlay').classList.remove('overlay--open');
   pendingReturnId = null;
+  _onModalClose();
 }
 
 async function confirmReturn() {
@@ -552,6 +612,7 @@ function openWriteoffModal(id, mode = 'loan') {
   dateInput.value = today;
   dateInput.max   = today;
 
+  _onModalOpen();
   document.getElementById('writeoffOverlay').classList.add('overlay--open');
   setTimeout(() => select.focus(), 50);
 }
@@ -559,6 +620,7 @@ function openWriteoffModal(id, mode = 'loan') {
 function closeWriteoffModal() {
   document.getElementById('writeoffOverlay').classList.remove('overlay--open');
   pendingWriteoffId = null;
+  _onModalClose();
 }
 
 async function confirmWriteoff() {
@@ -602,6 +664,7 @@ function openDeleteModal(id, mode = 'loan') {
   document.getElementById('deleteModalPerson').textContent = record.person;
   document.getElementById('deleteModalPrep').textContent   = mode === 'loan' ? 'loaned to' : 'borrowed from';
 
+  _onModalOpen();
   document.getElementById('deleteOverlay').classList.add('overlay--open');
   setTimeout(() => document.querySelector('#deleteOverlay .btn--cancel').focus(), 50);
 }
@@ -609,6 +672,7 @@ function openDeleteModal(id, mode = 'loan') {
 function closeDeleteModal() {
   document.getElementById('deleteOverlay').classList.remove('overlay--open');
   pendingDeleteId = null;
+  _onModalClose();
 }
 
 async function confirmDelete() {
@@ -665,6 +729,7 @@ function openEditModal(id, mode = 'loan') {
   document.getElementById('editDue').value    = record.due    || '';
   document.getElementById('editNotes').value  = record.notes  || '';
 
+  _onModalOpen();
   document.getElementById('editOverlay').classList.add('overlay--open');
   setTimeout(() => document.getElementById('editItem').focus(), 50);
 }
@@ -672,6 +737,7 @@ function openEditModal(id, mode = 'loan') {
 function closeEditModal() {
   document.getElementById('editOverlay').classList.remove('overlay--open');
   pendingEditId = null;
+  _onModalClose();
 }
 
 // Bridge from Edit → Delete. We close the edit modal and hand off
@@ -728,8 +794,14 @@ function buildCard(record, overdue, mode = 'loan') {
   const initials   = getInitials(record.person);
   const accentClass = mode === 'loan' ? 'loan-card--loan-accent' : 'loan-card--borrow-accent';
 
+  // First time this record is rendered this session → let it slide in.
+  const seenKey    = mode + record.id;
+  const enterClass = _seenCardIds.has(seenKey) ? '' : 'loan-card--enter';
+  _seenCardIds.add(seenKey);
+
   const modifiers = [
     accentClass,
+    enterClass,
     record.returned   ? 'loan-card--returned'    : '',
     record.writtenOff ? 'loan-card--written-off' : '',
     overdue           ? 'loan-card--overdue'      : '',
@@ -961,6 +1033,19 @@ function jumpToSection(name) {
 // Author: Dylan Smith | 2026-03-04 / 2026-05-22
 // ============================================================
 document.addEventListener('keydown', e => {
+  // Trap Tab within an open modal so keyboard focus can't wander
+  // into the (inert) page behind it, cycling at both ends.
+  if (e.key === 'Tab') {
+    const overlay = _openOverlay();
+    if (overlay) {
+      const f = _focusable(overlay);
+      if (!f.length) { e.preventDefault(); return; }
+      const first = f[0], last = f[f.length - 1], active = document.activeElement;
+      if (!overlay.contains(active)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+    }
+  }
   if (e.key === 'Enter') {
     if (document.activeElement.closest('#loanForm'))   addLoan();
     if (document.activeElement.closest('#borrowForm')) addBorrow();

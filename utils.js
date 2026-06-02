@@ -1,5 +1,13 @@
 function escapeHtml(str) {
-  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  // Escapes the five HTML-significant characters. The single quote is included
+  // so the helper is safe in single-quoted attribute contexts too, not just in
+  // text nodes and double-quoted attributes.
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function formatDate(d) {
@@ -9,9 +17,17 @@ function formatDate(d) {
   return `${months[parseInt(m, 10) - 1]} ${parseInt(day, 10)}, ${y}`;
 }
 
+// Whole calendar days between `d` (a "YYYY-MM-DD" string) and today.
+// Both ends are reduced to UTC calendar midnights — matching how the rest
+// of the app derives "today" via toISOString().split('T')[0] — so the result
+// is a clean day count rather than the old "now-instant minus UTC-midnight,
+// floored" arithmetic that could flip a day depending on the local clock.
 function daysSince(d) {
-  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-  if (days === 0) return 'today';
+  if (!d) return '';
+  const then  = Date.parse(d + 'T00:00:00Z');
+  const today = Date.parse(new Date().toISOString().split('T')[0] + 'T00:00:00Z');
+  const days  = Math.round((today - then) / 86400000);
+  if (days <= 0) return 'today';
   if (days === 1) return '1 day ago';
   return `${days} days ago`;
 }

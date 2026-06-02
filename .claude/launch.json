@@ -4,7 +4,8 @@
     {
       "name": "static",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "3000"],
+      "runtimeArgs": ["-c", "import os,http.server,socketserver;socketserver.TCPServer(('',int(os.environ.get('PORT','8000'))),http.server.SimpleHTTPRequestHandler).serve_forever()"],
+      "autoPort": true,
       "port": 3000
     }
   ]

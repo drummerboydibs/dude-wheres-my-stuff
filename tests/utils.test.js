@@ -4,6 +4,7 @@ describe('escapeHtml', () => {
   it('escapes ampersands', () => expect(escapeHtml('a & b')).toBe('a &amp; b'));
   it('escapes angle brackets', () => expect(escapeHtml('<script>')).toBe('&lt;script&gt;'));
   it('escapes double quotes', () => expect(escapeHtml('"hello"')).toBe('&quot;hello&quot;'));
+  it('escapes single quotes', () => expect(escapeHtml("it's")).toBe('it&#39;s'));
   it('returns empty string for null', () => expect(escapeHtml(null)).toBe(''));
   it('returns empty string for undefined', () => expect(escapeHtml(undefined)).toBe(''));
   it('coerces numbers to string', () => expect(escapeHtml(42)).toBe('42'));

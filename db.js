@@ -32,18 +32,24 @@ const db = (() => {
   }
 
   async function _loadSDK() {
-    const SRC = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+    // Pinned to an exact version + Subresource Integrity hash so a compromised
+    // CDN (or a hijacked floating "@2" tag) can't silently inject code that
+    // would run with full access to the user's session.
+    // To upgrade: bump the version, re-download the file, and recompute:
+    //   curl -fsSL <SRC> | openssl dgst -sha384 -binary | openssl base64 -A
+    const SRC = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2/dist/umd/supabase.min.js';
+    const INTEGRITY = 'sha384-4Cjkyy4cE1EgIS0C+Y3xzGmJ2noQFRRU91yKAW8IxtPfVtbQXPMqadSc3sYnjwou';
     if (window.supabase) return;
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');
       s.src = SRC;
+      s.integrity = INTEGRITY;
+      s.crossOrigin = 'anonymous';
       s.onload = resolve;
       s.onerror = () => reject(new Error('Failed to load Supabase SDK'));
       document.head.appendChild(s);
     });
   }
-
-  function isCloud() { return !!_client; }
 
   // ----------------------------------------------------------
   // AUTH
@@ -379,7 +385,7 @@ const db = (() => {
   // Author: Dylan Smith | 2026-03-04
   // ----------------------------------------------------------
   return {
-    init, isCloud, auth,
+    init, auth,
     getAll, insert, update, remove,
     getCategories, getWriteoffReasons,
     borrows: { getAll: borrowGetAll, insert: borrowInsert, update: borrowUpdate, remove: borrowRemove },

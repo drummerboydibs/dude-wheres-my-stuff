@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate config.js from secrets
+      - name: Assemble site into dist/ (runtime files + generated config.js)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -33,7 +33,17 @@ jobs:
             echo "::error::SUPABASE_URL or SUPABASE_ANON_KEY secret is missing."
             exit 1
           fi
-          node -e "const fs=require('fs');fs.writeFileSync('config.js','window.LOAN_LIST_SUPABASE_URL='+JSON.stringify(process.env.SUPABASE_URL)+';\nwindow.LOAN_LIST_SUPABASE_KEY='+JSON.stringify(process.env.SUPABASE_ANON_KEY)+';\n');"
+          mkdir -p dist
+          # Publish only what the browser actually needs. This keeps
+          # node_modules/, tests/, supabase/, mockups/ and docs out of the
+          # deployed site (smaller artifact, smaller public surface).
+          cp index.html styles.css app.js db.js utils.js site.webmanifest \
+             favicon.ico favicon-16x16.png favicon-32x32.png \
+             android-chrome-192x192.png android-chrome-512x512.png \
+             apple-touch-icon.png dist/
+          # config.js is generated from secrets. The anon key is public by
+          # design (protected by RLS), so baking it into the site is fine.
+          node -e "const fs=require('fs');fs.writeFileSync('dist/config.js','window.LOAN_LIST_SUPABASE_URL='+JSON.stringify(process.env.SUPABASE_URL)+';\nwindow.LOAN_LIST_SUPABASE_KEY='+JSON.stringify(process.env.SUPABASE_ANON_KEY)+';\n');"
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -41,7 +51,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment
